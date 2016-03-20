@@ -8,12 +8,7 @@ import ReactDOM from 'react-dom';
 window.client = new Swagger({
     url: '/swagger-api.yml',
     success: function() {
-        var userId = Number.parseInt(location.pathname.slice(1));
-        if (isNaN(userId)) {
-            $('body').text('Забыл userId: http://' + location.host + '/{userId}');
-        } else {
-            client.default.post_users_auth({id: userId});
-        }
+        store.dispatch({type: 'INIT'});
     },
     authorizations: {
         easyapi_basic: new Swagger.PasswordAuthorization(BASIC_SERVER_USER, BASIC_SERVER_PASSWORD)
@@ -109,6 +104,33 @@ function counter(state, action) {
     state.inProgress = false;
 
     switch (action.type) {
+        case 'INIT':
+            state.inProgress = true;
+            var path = location.pathname.slice(1).split('/');
+            var userId = Number.parseInt(path[0]);
+            if (isNaN(userId)) {
+                $('body').text('Забыл userId: http://' + location.host + '/{userId}');
+            } else {
+                client.default.post_users_auth({id: userId}, function(res) {
+                    var itemId = Number.parseInt(path[1]);
+                    if (!isNaN(itemId)) {
+                        store.dispatch({type: 'LOAD_ITEM', id: itemId});
+                    } else {
+                        store.dispatch({type: 'RESET_ITEM'});
+                    }
+                });
+            }
+            break;
+        case 'LOAD_ITEM':
+            state.inProgress = true;
+            client.default.get_items_id({id: action.id}, function(res) {
+                if (res.status == 404) {
+                    store.dispatch({type: 'RESET_ITEM'});
+                } else {
+                    store.dispatch({type: 'SET_ITEM', item: res.obj.items});
+                }
+            });
+            break;
         case 'RESET_ITEM':
             state.currentItem = null;
             break;
@@ -211,7 +233,11 @@ function ItemPreview({item})
         }
     }
 
+    var userId = location.pathname.split('/')[1];
+    var shareLink = '/' + userId + '/' + item.id;
+
     return <div className="tab-pane active">
+        <div style={{marginBottom: '10px'}}>id: <a href={shareLink}>{item.id}</a></div>
         <pre>{item.text}</pre>
         <RepeatedButton />
         <LearnedButton />
@@ -340,8 +366,6 @@ store.subscribe(function() {
 
     $('.blocker').toggle(state.inProgress);
 });
-
-store.dispatch({type: 'NOP'});
 
 $('.search-panel-form').submit(function() {
     client.default.get_items_search_search(
