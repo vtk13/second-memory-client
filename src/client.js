@@ -123,6 +123,7 @@ function counter(state, action) {
             break;
         case 'SAVE_CURRENT_ITEM':
             state.currentItem.text = action.text;
+            state.currentItem.href = action.href;
             state.inProgress = true;
             saveItem(state.currentItem, function(savedItem) {
                 store.dispatch({type: 'UPDATE_ITEM', item: savedItem});
@@ -219,18 +220,22 @@ function ItemPreview({item})
 
 function ItemEditor({item})
 {
-    var input;
+    var text, href;
 
     function saveItem(e)
     {
         e.preventDefault();
-        store.dispatch({type: 'SAVE_CURRENT_ITEM', text: input.value});
+        store.dispatch({type: 'SAVE_CURRENT_ITEM', text: text.value, href: href.value});
     }
 
     return <div className="tab-pane active">
         <form onSubmit={saveItem}>
             <div className="form-group">
-                <textarea ref={(c) => input = c} title="text" className="form-control" rows="20" defaultValue={item.text}></textarea>
+                <label htmlFor="currentItemHref">Href</label>
+                <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control" defaultValue={item.href} />
+            </div>
+            <div className="form-group">
+                <textarea ref={(c) => text = c} title="text" className="form-control" rows="20" defaultValue={item.text}></textarea>
             </div>
             <div className="form-group">
                 <button type="submit" className="btn btn-primary">Save</button>
@@ -267,6 +272,15 @@ function ItemMap({item})
                 памяти, описанной Дугласом Филдзом в журнале Scientific American.</div>
         </div>
     </div>;
+}
+
+function ItemHyperLink({item})
+{
+    if (item.href) {
+        return <a target="_blank" className="pull-right" href={item.href}><img src="/img/hyperlink.png" width="32" /></a>;
+    } else {
+        return <noscript/>;
+    }
 }
 
 function ItemWorkspace({item, mode})
@@ -308,6 +322,7 @@ function ItemWorkspace({item, mode})
                     var className = menuItem.active ? 'active' : '';
                     return <li key={menuItem.id} className={className}><a href="#" onClick={menuItem.onClick}>{menuItem.caption}</a></li>
                 })}
+                <ItemHyperLink item={item} />
             </ul>
             <CurrentItemState />
         </div>
