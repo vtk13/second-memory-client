@@ -1,0 +1,57 @@
+body {
+    padding-top: 65px;
+}
+
+#map {
+    min-height: 500px;
+    position: relative;
+}
+.item {
+    max-width: 250px;
+    max-height: 100px;
+    overflow: hidden;
+    position: absolute;
+    cursor: pointer;
+}
+.item>.panel-body {
+    padding: 5px;
+}
+.item1 {
+    left: 100px;
+    top: 10px;
+}
+.item2 {
+    left: 300px;
+    top: 300px;
+}
+.item3 {
+    left: 10px;
+    top: 200px;
+}
+.item4 {
+    left: 500px;
+    top: 40px;
+}
+
+.glyphicon-new-window {
+    cursor: pointer;
+}
+.current-item-container-tabs {
+    margin-bottom: 15px;
+}
+
+.blocker {
+    opacity: 0.7;
+    background: #ccc url(/img/ajax-loader.gif) center center no-repeat;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    text-align: center;
+}
+
+button + button {
+    margin-left: 10px;
+}

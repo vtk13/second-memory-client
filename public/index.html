@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Second Memory</title>
+
+    <link href="css/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="css/screen.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Second Memory</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="#" class="main-menu-new-item">New record</a></li>
+                <li><a href="#" class="main-menu-repeat">Repeat</a></li>
+                <li><a href="#" class="main-menu-learn">Learn</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 current-item-container"></div>
+        <div class="col-md-4 search-panel">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#">Search</a></li>
+                <li><a href="#">Latest</a></li>
+                <li><a href="#">Recent</a></li>
+            </ul>
+            <form class="form-inline search-panel-form" style="margin: 15px 0;">
+                <div class="form-group">
+                    <input title="Search terms" type="text" name="text" placeholder="search terms" class="form-control search-panel-form-input">
+                    <button type="submit" class="btn btn-default">Search</button>
+                </div>
+            </form>
+            <ul class="list-group search-panel-results">
+                <li class="list-group-item search-panel-results-item">Cras justo odio <span class="glyphicon glyphicon-new-window pull-right"></span></li>
+                <li class="list-group-item search-panel-results-item">Dapibus ac facilisis in <span class="glyphicon glyphicon-new-window pull-right"></span></li>
+                <li class="list-group-item search-panel-results-item">Morbi leo risus <span class="glyphicon glyphicon-new-window pull-right"></span></li>
+                <li class="list-group-item search-panel-results-item">Porta ac consectetur ac <span class="glyphicon glyphicon-new-window pull-right"></span></li>
+                <li class="list-group-item search-panel-results-item">Vestibulum at eros <span class="glyphicon glyphicon-new-window pull-right"></span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="blocker"></div>
+
+<script type="text/javascript" src="vendor.js"></script>
+<script type="text/javascript" src="client.js"></script>
+</body>
+</html>

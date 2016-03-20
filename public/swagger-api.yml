@@ -1,0 +1,142 @@
+# second memory swagger definition
+swagger: '2.0'
+
+info:
+  version: "0.0.1"
+  title: Second Memory API
+
+host: sms.vtkd.ru
+
+paths:
+  /users/auth:
+    post:
+      summary: Authorize user
+      parameters:
+        - name: id
+          in: formData
+          type: integer
+          required: true
+      responses:
+        200:
+          description: Authorized
+        401:
+          description: Unauthorized
+  /items:
+    post:
+      summary: Add new item for repetition or lerning
+      parameters:
+        - $ref: "#/parameters/itemType"
+        - $ref: "#/parameters/itemText"
+        - $ref: "#/parameters/itemHref"
+      responses:
+        200:
+          description: Added item
+          schema:
+            $ref: "#/definitions/Item"
+  /items/{id}:
+    put:
+      summary: Update existed item
+      parameters:
+        - $ref: "#/parameters/itemId"
+        - $ref: "#/parameters/itemType"
+        - $ref: "#/parameters/itemText"
+        - $ref: "#/parameters/itemHref"
+      responses:
+        200:
+          description: Updated item
+          schema:
+            $ref: "#/definitions/Item"
+        404:
+          description: Not found
+    get:
+      summary: Retreive item
+      parameters:
+        - $ref: "#/parameters/itemId"
+      responses:
+        200:
+          description: Updated item
+          schema:
+            $ref: "#/definitions/Item"
+        404:
+          description: Not found
+  /items/next-to-repeat:
+    get:
+      summary: Get next item to repeat
+      responses:
+        200:
+          description: Next item to repeat
+          schema:
+            $ref: "#/definitions/Item"
+        204:
+          description: No item to repeat
+  /items/{id}/repeat:
+    put:
+      summary: Mark item as just repeated
+      parameters:
+        - $ref: "#/parameters/itemId"
+      responses:
+        200:
+          description: Updated item
+          schema:
+            $ref: "#/definitions/Item"
+        404:
+          description: Not found
+  /items/learn:
+    get:
+      summary: Get random item with type=1
+      responses:
+        200:
+          description: Item
+          schema:
+            $ref: "#/definitions/Item"
+        204:
+          description: No item to learn
+  /items/search/{search}:
+    get:
+      summary: Text search through items content and href fields
+      parameters:
+        - $ref: "#/parameters/searchKeywords"
+      responses:
+        200:
+          description: List of items
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Item"
+parameters:
+  itemId:
+    name: id
+    in: path
+    type: integer
+    required: true
+  itemType:
+    name: type
+    in: formData
+    description: 'Type of item, 0 - primary, 1 - to learn'
+    type: integer
+  itemText:
+    name: text
+    in: formData
+    type: string
+    required: true
+  itemHref:
+    name: href
+    in: formData
+    type: string
+  searchKeywords:
+    name: search
+    in: path
+    type: string
+    required: true
+definitions:
+  Item:
+    type: object
+    properties:
+      id:
+        type: integer
+      type:
+        type: integer
+      text:
+        type: string
+      href:
+        type: string
