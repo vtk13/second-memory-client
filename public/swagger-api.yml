@@ -59,6 +59,34 @@ paths:
             $ref: "#/definitions/Item"
         404:
           description: Not found
+  /items/{id}/links:
+    get:
+      summary: List related items refs
+      parameters:
+        - $ref: "#/parameters/itemId"
+      responses:
+        200:
+          description: Links to related items
+          schema:
+            type: array
+            items:
+              - $ref: "#/definitions/Link"
+        404:
+          description: Not found
+  /items/link:
+    put:
+      summary: Link item with another one
+      parameters:
+        - $ref: "#/parameters/linkLeft"
+        - $ref: "#/parameters/linkRight"
+        - $ref: "#/parameters/linkId"
+        - $ref: "#/parameters/linkX"
+        - $ref: "#/parameters/linkY"
+      responses:
+        200:
+          description: Successfully linked
+        404:
+          description: Not found
   /items/next-to-repeat:
     get:
       summary: Get next item to repeat
@@ -128,6 +156,27 @@ parameters:
     in: path
     type: string
     required: true
+
+  linkLeft:
+    name: left
+    in: formData
+    type: integer
+  linkRight:
+    name: right
+    in: formData
+    type: integer
+  linkId:
+    name: id
+    in: formData
+    type: integer
+  linkX:
+    name: x
+    in: formData
+    type: integer
+  linkY:
+    name: y
+    in: formData
+    type: integer
 definitions:
   Item:
     type: object
@@ -140,3 +189,16 @@ definitions:
         type: string
       href:
         type: string
+  Link:
+    type: object
+    properties:
+      left:
+        type: integer
+      right:
+        type: integer
+      id:
+        type: integer
+      x:
+        type: integer
+      y:
+        type: integer
