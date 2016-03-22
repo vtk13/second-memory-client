@@ -5,6 +5,8 @@ import { createStore } from 'redux';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import url from './url';
+
 window.client = new Swagger({
     url: '/swagger-api.yml',
     success: function() {
@@ -106,14 +108,12 @@ function counter(state, action) {
     switch (action.type) {
         case 'INIT':
             state.inProgress = true;
-            var path = location.pathname.slice(1).split('/');
-            var userId = Number.parseInt(path[0]);
-            if (isNaN(userId)) {
+            var [userId, itemId] = url.info();
+            if (!userId) {
                 $('body').text('Забыл userId: http://' + location.host + '/{userId}');
             } else {
                 client.default.post_users_auth({id: userId}, function(res) {
-                    var itemId = Number.parseInt(path[1]);
-                    if (!isNaN(itemId)) {
+                    if (itemId) {
                         store.dispatch({type: 'LOAD_ITEM', id: itemId});
                     } else {
                         store.dispatch({type: 'RESET_ITEM'});
@@ -133,6 +133,8 @@ function counter(state, action) {
             break;
         case 'RESET_ITEM':
             state.currentItem = null;
+            url.setItemId(0);
+            document.title = 'Second Memory';
             break;
         case 'NEW_ITEM':
             state.currentItem = {
@@ -141,6 +143,8 @@ function counter(state, action) {
                 text: '',
                 href: ''
             };
+            url.setItemId(0);
+            document.title = 'Create Item - Second Memory';
             state.currentItemMode = 'edit';
             break;
         case 'SAVE_CURRENT_ITEM':
@@ -157,6 +161,8 @@ function counter(state, action) {
         case 'UPDATE_ITEM':
             state.canRepeat = action.canRepeat || false;
             state.currentItem = action.item || state.currentItem;
+            url.setItemId(state.currentItem.id);
+            document.title = state.currentItem.text ? state.currentItem.text.split('\n')[0] : 'Second Memory';
             break;
         case 'SET_ITEM_MODE':
             state.currentItemMode = action.mode;
@@ -233,11 +239,8 @@ function ItemPreview({item})
         }
     }
 
-    var userId = location.pathname.split('/')[1];
-    var shareLink = '/' + userId + '/' + item.id;
-
     return <div className="tab-pane active">
-        <div style={{marginBottom: '10px'}}>id: <a href={shareLink}>{item.id}</a></div>
+        <div style={{marginBottom: '10px'}}>id: <a href={url.getItemUrl(item.id)}>{item.id}</a></div>
         <pre>{item.text}</pre>
         <RepeatedButton />
         <LearnedButton />
@@ -261,7 +264,7 @@ function ItemEditor({item})
                 <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control" defaultValue={item.href} />
             </div>
             <div className="form-group">
-                <textarea ref={(c) => text = c} title="text" className="form-control" rows="20" defaultValue={item.text}></textarea>
+                <textarea ref={(c) => text = c} title="text" className="form-control" rows="18" defaultValue={item.text}></textarea>
             </div>
             <div className="form-group">
                 <button type="submit" className="btn btn-primary">Save</button>
@@ -400,3 +403,12 @@ $('.main-menu-learn').click(function() {
     store.dispatch({type: 'LEARN'});
     return false;
 });
+
+window.onpopstate = function(event) {
+    var [userId, itemId] = url.info();
+    if (itemId) {
+        if (!store.getState().currentItem || store.getState().currentItem.id != itemId) {
+            store.dispatch({type: 'LOAD_ITEM', id: itemId});
+        }
+    }
+};
