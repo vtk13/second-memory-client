@@ -16,22 +16,6 @@ body {
 .item>.panel-body {
     padding: 5px;
 }
-.item1 {
-    left: 100px;
-    top: 10px;
-}
-.item2 {
-    left: 300px;
-    top: 300px;
-}
-.item3 {
-    left: 10px;
-    top: 200px;
-}
-.item4 {
-    left: 500px;
-    top: 40px;
-}
 
 .glyphicon-new-window {
     cursor: pointer;
@@ -62,4 +46,9 @@ pre {
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+.search-panel-results-item .glyphicon-import {
+    cursor: pointer;
+    margin-right: 10px;
 }

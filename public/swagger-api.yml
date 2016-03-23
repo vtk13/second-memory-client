@@ -73,13 +73,12 @@ paths:
               - $ref: "#/definitions/Link"
         404:
           description: Not found
-  /items/link:
     put:
       summary: Link item with another one
       parameters:
-        - $ref: "#/parameters/linkLeft"
+        - $ref: "#/parameters/itemId"
         - $ref: "#/parameters/linkRight"
-        - $ref: "#/parameters/linkId"
+        - $ref: "#/parameters/linkTypeId"
         - $ref: "#/parameters/linkX"
         - $ref: "#/parameters/linkY"
       responses:
@@ -157,16 +156,12 @@ parameters:
     type: string
     required: true
 
-  linkLeft:
-    name: left
-    in: formData
-    type: integer
   linkRight:
     name: right
     in: formData
     type: integer
-  linkId:
-    name: id
+  linkTypeId:
+    name: typeId
     in: formData
     type: integer
   linkX:
@@ -196,7 +191,7 @@ definitions:
         type: integer
       right:
         type: integer
-      id:
+      typeId:
         type: integer
       x:
         type: integer

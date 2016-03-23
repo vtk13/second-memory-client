@@ -73,15 +73,6 @@ function setDragaable(item)
     };
 }
 
-var items = document.getElementsByClassName('item');
-for (var i in items) {
-    if (items[i] instanceof HTMLElement) {
-        setDragaable(items[i]);
-    }
-}
-
-// */
-
 function saveItem(item, success)
 {
     if (item.id) {
@@ -100,6 +91,7 @@ function counter(state, action) {
         inProgress: false,
         canRepeat: false,
         currentItem: null,
+        currentItemLinks: [],
         currentItemMode: 'preview'
     };
 
@@ -154,6 +146,10 @@ function counter(state, action) {
             saveItem(state.currentItem, function(savedItem) {
                 store.dispatch({type: 'UPDATE_ITEM', item: savedItem});
             });
+            break;
+        case 'LINK_ITEM':
+            state.currentItemLinks.push({item: action.item, x: 0, y: 0});
+            state.currentItemMode = 'map';
             break;
         case 'SET_ITEM':
             state.currentItemMode = 'preview';
@@ -273,35 +269,24 @@ function ItemEditor({item})
     </div>;
 }
 
-function ItemMap({item})
-{
-    return <div className="tab-pane active" id="map">
-        <div className="item item1 panel panel-default">
-            <div className="panel-heading">
-                <span className="glyphicon glyphicon-move" />
-                <span className="glyphicon glyphicon-edit pull-right" />
-            </div>
-            <div className="panel-body">qwe qweq we</div>
-        </div>
-        <div className="item item2 panel panel-default">
-            <div className="panel-body">Элеанор Портер «Поллианна», вышедшей в свет в 1913 году.</div>
-        </div>
-        <div className="item item3 panel panel-default">
-            <div className="panel-body">«Проклятие знания» (англ. Curse of knowledge) — одно из когнитивных
-                искажений в мышлении человека (см. их список); термин, предложенный
-                психологом Робином Хогартом для обозначения психологического феномена,
-                заключающегося в том, что более информированным людям чрезвычайно сложно
-                рассматривать какую-либо проблему с точки зрения менее информированных людей.</div>
-        </div>
-        <div className="item item4 panel panel-default">
-            <div className="panel-body">Spaced learning (Обучение с перерывами, устойчивого перевода нет)
-                — методика обучения, по которой тема изучается тремя блоками,
-                между которыми делается два десятиминутных перерыва для двигательной
-                активности. Методика основана на механизме формирования долговременной
-                памяти, описанной Дугласом Филдзом в журнале Scientific American.</div>
-        </div>
-    </div>;
-}
+var ItemMap = React.createClass({
+    render: function() {
+        return <div className="tab-pane active" id="map">
+            {this.props.links.map(function(link) {
+                var text = link.item.text ? link.item.text.split('\n')[0] : 'empty note';
+                var className = 'item item' + link.item.id + ' panel panel-default';
+                return <div key={link.item.id} className={className} style={{left: link.x, top: link.y}}>
+                    <div className="panel-body">{text}</div>
+                </div>;
+            })}
+        </div>;
+    },
+    componentDidMount: function() {
+        $(this.getDOMNode()).find('.item').each(function() {
+            setDragaable(this);
+        });
+    }
+});
 
 function ItemHyperLink({item})
 {
@@ -312,7 +297,7 @@ function ItemHyperLink({item})
     }
 }
 
-function ItemWorkspace({item, mode})
+function ItemWorkspace({item, links, mode})
 {
     function onPreview() {
         store.dispatch({type: 'SET_ITEM_MODE', mode: 'preview'});
@@ -339,7 +324,7 @@ function ItemWorkspace({item, mode})
                 return <ItemEditor item={item} />;
                 break;
             case 'map':
-                return <ItemMap item={item} />;
+                return <ItemMap links={links} />;
                 break;
         }
     }
@@ -363,7 +348,7 @@ function ItemWorkspace({item, mode})
 store.subscribe(function() {
     var state = store.getState();
     ReactDOM.render(
-        <ItemWorkspace item={state.currentItem} mode={state.currentItemMode} />,
+        <ItemWorkspace item={state.currentItem} links={state.currentItemLinks} mode={state.currentItemMode} />,
         $('.current-item-container').get(0)
     );
 
@@ -378,10 +363,16 @@ $('.search-panel-form').submit(function() {
             list.empty();
             res.obj.items.forEach(function(item) {
                 var element = $('<li class="list-group-item search-panel-results-item" />');
-                element.html(item.text.substring(0, 100) + ' <span class="glyphicon glyphicon-new-window pull-right"></span>');
+                element.html(item.text.substring(0, 100)
+                    + ' <span class="glyphicon glyphicon-new-window pull-right"></span>'
+                    + ' <span class="glyphicon glyphicon-import pull-right"></span>'
+                );
                 list.append(element);
                 element.find('.glyphicon-new-window').click(function() {
                     store.dispatch({type: 'SET_ITEM', item: item});
+                });
+                element.find('.glyphicon-import').click(function() {
+                    store.dispatch({type: 'LINK_ITEM', item: item});
                 });
             });
         }
