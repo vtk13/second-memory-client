@@ -19,6 +19,26 @@ window.client = new Swagger({
 });
 //*/
 
+function mapFields(obj, callback)
+{
+    var res = [];
+    for (var i in obj) {
+        if (obj.hasOwnProperty(i)) {
+            res.push(callback(obj[i], i));
+        }
+    }
+    return res;
+}
+
+function countFields(obj)
+{
+    var res = 0;
+    for (var i in obj) {
+        res++;
+    }
+    return res;
+}
+
 function sumRelativeOffset(elem, initial)
 {
     initial = initial || {top: 0, left: 0};
@@ -42,37 +62,6 @@ function getCoords(elem) {
 
 }
 
-function setDragaable(item)
-{
-    item.onmousedown = function (e) {
-
-        var coords = getCoords(item);
-        var shiftX = e.pageX - coords.left;
-        var shiftY = e.pageY - coords.top;
-
-        moveAt(e);
-
-        function moveAt(e) {
-            item.style.left = (e.pageX - shiftX) + 'px';
-            item.style.top = (e.pageY - shiftY) + 'px';
-        }
-
-        document.onmousemove = function (e) {
-            moveAt(e);
-        };
-
-        item.onmouseup = function () {
-            document.onmousemove = null;
-            item.onmouseup = null;
-        };
-
-    };
-
-    item.ondragstart = function () {
-        return false;
-    };
-}
-
 function saveItem(item, success)
 {
     if (item.id) {
@@ -91,7 +80,7 @@ function counter(state, action) {
         inProgress: false,
         canRepeat: false,
         currentItem: null,
-        currentItemLinks: [],
+        currentItemLinks: {},
         currentItemMode: 'preview'
     };
 
@@ -119,12 +108,13 @@ function counter(state, action) {
                 if (res.status == 404) {
                     store.dispatch({type: 'RESET_ITEM'});
                 } else {
-                    store.dispatch({type: 'SET_ITEM', item: res.obj.items});
+                    store.dispatch({type: 'SET_ITEM', item: res.obj.items, mode: action.mode});
                 }
             });
             break;
         case 'RESET_ITEM':
             state.currentItem = null;
+            state.currentItemLinks = [];
             url.setItemId(0);
             document.title = 'Second Memory';
             break;
@@ -135,6 +125,7 @@ function counter(state, action) {
                 text: '',
                 href: ''
             };
+            state.currentItemLinks = [];
             url.setItemId(0);
             document.title = 'Create Item - Second Memory';
             state.currentItemMode = 'edit';
@@ -147,18 +138,84 @@ function counter(state, action) {
                 store.dispatch({type: 'UPDATE_ITEM', item: savedItem});
             });
             break;
+        case 'SET_ITEM_LINKS':
+            state.currentItemLinks = action.links;
+            break;
         case 'LINK_ITEM':
-            state.currentItemLinks.push({item: action.item, x: 0, y: 0});
-            state.currentItemMode = 'map';
+            if (!state.currentItemLinks[action.item.id]) {
+                state.currentItemLinks[action.item.id] = {item: action.item, x: 0, y: 0};
+                state.currentItemMode = 'map';
+                state.inProgress = true;
+                client.default.put_items_id_links(
+                    {
+                        id: state.currentItem.id,
+                        right: action.item.id,
+                        type_id: 0,
+                        x: 0,
+                        y: 0
+                    },
+                    function() {
+                        store.dispatch({type: 'NOP'});
+                    }
+                );
+            }
+            break;
+        case 'SET_ITEM_XY':
+            if (state.currentItemLinks[action.id]) {
+                state.currentItemLinks[action.id].x = action.x;
+                state.currentItemLinks[action.id].y = action.y;
+                client.default.put_items_id_links(
+                    {
+                        id: state.currentItem.id,
+                        right: action.id,
+                        type_id: 0,
+                        x: action.x,
+                        y: action.y
+                    },
+                    function() {
+                        store.dispatch({type: 'NOP'});
+                    }
+                );
+            }
             break;
         case 'SET_ITEM':
-            state.currentItemMode = 'preview';
+            state.currentItemMode = action.mode || 'preview';
             // no break
         case 'UPDATE_ITEM':
+            state.currentItemMode = action.mode || state.currentItemMode;
             state.canRepeat = action.canRepeat || false;
             state.currentItem = action.item || state.currentItem;
+            state.currentItemLinks = [];
             url.setItemId(state.currentItem.id);
             document.title = state.currentItem.text ? state.currentItem.text.split('\n')[0] : 'Second Memory';
+
+            // load links
+            state.inProgress = true;
+            client.default.get_items_id_links(
+                {id: state.currentItem.id},
+                function(res) {
+                    if (res.obj.length == 0) {
+                        store.dispatch({type: 'SET_ITEM_LINKS', links: res.obj});
+                    }
+
+                    var n = 0;
+                    var links = {};
+                    res.obj.map(function(link) {
+                        links[link.right] = link;
+                    });
+                    res.obj.map(function(link) {
+                        client.default.get_items_id({id: link.right}, function(res) {
+                            n++;
+                            var item = res.obj.items;
+                            links[item.id].item = item;
+
+                            if (n == countFields(links)) {
+                                store.dispatch({type: 'SET_ITEM_LINKS', links: links});
+                            }
+                        });
+                    });
+                }
+            );
             break;
         case 'SET_ITEM_MODE':
             state.currentItemMode = action.mode;
@@ -173,6 +230,12 @@ function counter(state, action) {
                 }
             });
             break;
+        case 'REPEATED':
+            state.inProgress = true;
+            client.default.put_items_id_repeat({id: state.currentItem.id}, function(res) {
+                store.dispatch({type: 'NOP'});
+            });
+            break;
         case 'LEARN':
             state.inProgress = true;
             client.default.get_items_learn({}, function(res) {
@@ -183,17 +246,11 @@ function counter(state, action) {
                 }
             });
             break;
-        case 'REPEATED':
-            state.inProgress = true;
-            client.default.put_items_id_repeat({id: state.currentItem.id}, function(res) {
-                store.dispatch({type: 'UPDATE_ITEM'});
-            });
-            break;
         case 'TOGGLE_LEARNED':
             state.inProgress = true;
             state.currentItem.type = state.currentItem.type == 1 ? 0 : 1;
             saveItem(state.currentItem, function(savedItem) {
-                store.dispatch({type: 'UPDATE_ITEM'});
+                store.dispatch({type: 'NOP'});
             });
             break;
     }
@@ -271,20 +328,32 @@ function ItemEditor({item})
 
 var ItemMap = React.createClass({
     render: function() {
+        if (!this.props.item.id) {
+            return false;
+        }
+
+        function gotoItem(id)
+        {
+            store.dispatch({type: 'LOAD_ITEM', id: id, mode: 'map'});
+        }
+
         return <div className="tab-pane active" id="map">
-            {this.props.links.map(function(link) {
-                var text = link.item.text ? link.item.text.split('\n')[0] : 'empty note';
-                var className = 'item item' + link.item.id + ' panel panel-default';
-                return <div key={link.item.id} className={className} style={{left: link.x, top: link.y}}>
-                    <div className="panel-body">{text}</div>
-                </div>;
-            })}
+            {mapFields(
+                this.props.links,
+                function (link) {
+                    var text = link.item.text ? link.item.text.split('\n')[0] : 'empty note';
+                    var className = 'item item' + link.item.id + ' panel panel-default';
+                    return <div data-id={link.item.id} key={link.item.id} className={className}
+                                style={{left: link.x, top: link.y}}>
+                        <div className="panel-body">
+                            <span className="glyphicon glyphicon-move"></span>
+                            <span onClick={function() {gotoItem(link.item.id);}} className="open-item-map glyphicon glyphicon-eye-open"></span>
+                            {text}
+                        </div>
+                    </div>;
+                }
+            )}
         </div>;
-    },
-    componentDidMount: function() {
-        $(this.getDOMNode()).find('.item').each(function() {
-            setDragaable(this);
-        });
     }
 });
 
@@ -311,9 +380,11 @@ function ItemWorkspace({item, links, mode})
 
     var menu = [
         {id: 'preview', caption: 'Preview', onClick: onPreview, active: mode == 'preview'},
-        {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'},
-        {id: 'map', caption: 'Map', onClick: onMap, active: mode == 'map'}
+        {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'}
     ];
+    if (item && item.id) {
+        menu.push({id: 'map', caption: 'Map', onClick: onMap, active: mode == 'map'});
+    }
 
     function CurrentItemState()
     {
@@ -324,7 +395,7 @@ function ItemWorkspace({item, links, mode})
                 return <ItemEditor item={item} />;
                 break;
             case 'map':
-                return <ItemMap links={links} />;
+                return <ItemMap item={item} links={links} />;
                 break;
         }
     }
@@ -347,6 +418,7 @@ function ItemWorkspace({item, links, mode})
 
 store.subscribe(function() {
     var state = store.getState();
+    // подписаться нужно внутри компонента, и не вызывать ReactDOM.render каждый раз
     ReactDOM.render(
         <ItemWorkspace item={state.currentItem} links={state.currentItemLinks} mode={state.currentItemMode} />,
         $('.current-item-container').get(0)
@@ -394,6 +466,37 @@ $('.main-menu-learn').click(function() {
     store.dispatch({type: 'LEARN'});
     return false;
 });
+
+$('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}) {
+    var item = $(this).parents('.item').get(0);
+    var e = originalEvent;
+
+    var coords = getCoords(item);
+    var shiftX = e.pageX - coords.left;
+    var shiftY = e.pageY - coords.top;
+
+    moveAt(e);
+
+    function moveAt(e) {
+        item.style.left = (e.pageX - shiftX) + 'px';
+        item.style.top = (e.pageY - shiftY) + 'px';
+    }
+
+    document.onmousemove = function (e) {
+        moveAt(e);
+    };
+
+    item.onmouseup = function() {
+        store.dispatch({
+            type: 'SET_ITEM_XY',
+            id: $(this).data('id'),
+            x: Number.parseInt(item.style.left),
+            y: Number.parseInt(item.style.top)
+        });
+        document.onmousemove = null;
+        item.onmouseup = null;
+    };
+}).on('dragstart', '#map .item .glyphicon-move', function() { return false; });
 
 window.onpopstate = function(event) {
     var [userId, itemId] = url.info();

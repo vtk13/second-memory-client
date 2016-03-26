@@ -59,6 +59,15 @@ paths:
             $ref: "#/definitions/Item"
         404:
           description: Not found
+    delete:
+      summary: Delete item permanently
+      parameters:
+        - $ref: "#/parameters/itemId"
+      responses:
+        200:
+          description: Item successfully removed
+        404:
+          description: Not found
   /items/{id}/links:
     get:
       summary: List related items refs
@@ -160,8 +169,9 @@ parameters:
     name: right
     in: formData
     type: integer
+    required: true
   linkTypeId:
-    name: typeId
+    name: type_id
     in: formData
     type: integer
   linkX:
@@ -191,7 +201,7 @@ definitions:
         type: integer
       right:
         type: integer
-      typeId:
+      type_id:
         type: integer
       x:
         type: integer
