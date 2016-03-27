@@ -417,7 +417,7 @@ var ItemMap = React.createClass({
             {mapFields(
                 this.props.links,
                 function (link) {
-                    var text = link.item.text ? link.item.text.split('\n')[0] : 'empty note';
+                    var text = link.item.text.split('\n')[0];
                     var className = 'item item' + link.item.id + ' panel panel-default';
                     return <div data-id={link.item.id} key={link.item.id} className={className}
                                 style={{left: link.x, top: link.y}}>
@@ -512,7 +512,7 @@ $('.search-panel-form').submit(function() {
             list.empty();
             res.obj.items.forEach(function(item) {
                 var element = $('<li class="list-group-item search-panel-results-item" />');
-                element.html(item.text.substring(0, 100)
+                element.html(item.text.split('\n')[0]
                     + ' <span class="glyphicon glyphicon-new-window pull-right"></span>'
                     + ' <span class="glyphicon glyphicon-import pull-right"></span>'
                 );
