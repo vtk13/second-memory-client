@@ -35,7 +35,7 @@ body {
     text-align: center;
 }
 
-button + button {
+.btn-primary + .btn-primary, .btn-to-learn, .btn-to-repeat {
     margin-left: 10px;
 }
 
@@ -52,9 +52,18 @@ pre {
     margin-right: 10px;
 }
 
+.item .panel-heading {
+    padding: 5px;
+}
 .item .glyphicon-move {
     cursor: crosshair;
     margin-right: 10px;
+}
+.item .glyphicon-remove {
+    float: right;
+    margin-left: 15px;
+    margin-top: 1px;
+    cursor: pointer;
 }
 .open-item-map {
     cursor: pointer;

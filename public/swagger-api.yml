@@ -95,6 +95,15 @@ paths:
           description: Successfully linked
         404:
           description: Not found
+    delete:
+      summary: Unlink items
+      parameters:
+        - $ref: "#/parameters/itemId"
+        - $ref: "#/parameters/linkRight"
+        - $ref: "#/parameters/linkTypeId"
+      responses:
+        200:
+          description: Successfully unlinked
   /items/next-to-repeat:
     get:
       summary: Get next item to repeat

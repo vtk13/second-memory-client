@@ -131,11 +131,20 @@ function counter(state, action) {
             state.currentItemMode = 'edit';
             break;
         case 'SAVE_CURRENT_ITEM':
-            state.currentItem.text = action.text;
-            state.currentItem.href = action.href;
+            if (action.item.type !== undefined) {
+                state.currentItem.type = action.item.type;
+            }
+            state.currentItem.text = action.item.text;
+            state.currentItem.href = action.item.href;
             state.inProgress = true;
             saveItem(state.currentItem, function(savedItem) {
                 store.dispatch({type: 'UPDATE_ITEM', item: savedItem});
+            });
+            break;
+        case 'DELETE_CURRENT_ITEM':
+            state.inProgress = true;
+            client.default.delete_items_id({id: state.currentItem.id}, function() {
+                store.dispatch({type: 'RESET_ITEM'});
             });
             break;
         case 'SET_ITEM_LINKS':
@@ -159,6 +168,18 @@ function counter(state, action) {
                     }
                 );
             }
+            break;
+        case 'UNLINK_ITEM':
+            state.inProgress = true;
+            delete state.currentItemLinks[action.id];
+            client.default.delete_items_id_links(
+                {
+                    id: state.currentItem.id,
+                    right: action.id
+                },
+                function() {
+                    store.dispatch({type: 'NOP'});
+                });
             break;
         case 'SET_ITEM_XY':
             if (state.currentItemLinks[action.id]) {
@@ -233,7 +254,7 @@ function counter(state, action) {
         case 'REPEATED':
             state.inProgress = true;
             client.default.put_items_id_repeat({id: state.currentItem.id}, function(res) {
-                store.dispatch({type: 'NOP'});
+                store.dispatch({type: 'UPDATE_ITEM', canRepeat: false});
             });
             break;
         case 'LEARN':
@@ -261,8 +282,17 @@ window.store = createStore(counter);
 
 function ItemPreview({item})
 {
-    function RepeatedButton()
-    {
+    return <div className="tab-pane active">
+        <div style={{marginBottom: '10px'}}>id: <a href={url.getItemUrl(item.id)}>{item.id}</a></div>
+        <pre>{item.text}</pre>
+        <RepeatedButton item={item} />
+    </div>;
+}
+
+var RepeatedButton = React.createClass({
+    render: function() {
+        var item = this.props.item;
+
         function onClick() {
             store.dispatch({type: 'REPEATED', item: item});
         }
@@ -270,59 +300,98 @@ function ItemPreview({item})
         if (store.getState().canRepeat) {
             return <button type="submit" className="btn btn-primary" onClick={onClick}>Repeated</button>;
         } else {
-            return <span />;
+            return false;
         }
     }
+});
 
-    function LearnedButton()
-    {
+var LearnedButton = React.createClass({
+    render: function() {
+        var item = this.props.item;
+
         function onClick() {
             store.dispatch({type: 'TOGGLE_LEARNED'});
         }
 
         if (!item.id) {
-            return <span />;
+            return false;
         }
 
         if (item.type == 0) {
-            return <button type="submit" className="btn btn-primary" onClick={onClick}>Set On Learn</button>;
+            return <button type="button" className="btn btn-to-learn btn-primary" onClick={onClick}>Set On Learn</button>;
         } else {
-
-            return <button type="submit" className="btn btn-primary" onClick={onClick}>Set On Repeat</button>;
+            return <button type="button" className="btn btn-to-repeat btn-primary" onClick={onClick}>Set On Repeat</button>;
         }
     }
+});
 
-    return <div className="tab-pane active">
-        <div style={{marginBottom: '10px'}}>id: <a href={url.getItemUrl(item.id)}>{item.id}</a></div>
-        <pre>{item.text}</pre>
-        <RepeatedButton />
-        <LearnedButton />
-    </div>;
-}
+var DeleteButton = React.createClass({
+    render: function() {
+        var item = this.props.item;
+
+        if (!item.id) {
+            return false;
+        }
+
+        function deleteItem(e)
+        {
+            if (confirm('Really delete?')) {
+                store.dispatch({type: 'DELETE_CURRENT_ITEM'});
+            }
+        }
+
+        return <button type="button" onClick={deleteItem} className="btn btn-danger pull-right">Delete</button>;
+    }
+});
+
+var SaveButtons = React.createClass({
+    render: function() {
+        var item = this.props.item;
+
+        if (item.id) {
+            return <button type="button" onClick={this.props.saveItem} className="btn btn-primary">Save</button>
+        } else {
+            return <div>
+                <button type="button" onClick={this.props.saveToLearn} className="btn btn-primary">Save to learn</button>
+                <button type="button" onClick={this.props.saveToRepeat} className="btn btn-primary">Save to repeat</button>
+            </div>;
+        }
+    }
+});
 
 function ItemEditor({item})
 {
     var text, href;
 
-    function saveItem(e)
+    function saveItemWithType(type)
     {
-        e.preventDefault();
-        store.dispatch({type: 'SAVE_CURRENT_ITEM', text: text.value, href: href.value});
+        store.dispatch({
+            type: 'SAVE_CURRENT_ITEM',
+            item: {
+                type: type,
+                text: text.value,
+                href: href.value
+            }
+        });
     }
 
+    function saveItem() { saveItemWithType(); }
+    function saveToLearn() { saveItemWithType(1); }
+    function saveToRepeat() { saveItemWithType(0); }
+
     return <div className="tab-pane active">
-        <form onSubmit={saveItem}>
-            <div className="form-group">
-                <label htmlFor="currentItemHref">Href</label>
-                <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control" defaultValue={item.href} />
-            </div>
-            <div className="form-group">
-                <textarea ref={(c) => text = c} title="text" className="form-control" rows="18" defaultValue={item.text}></textarea>
-            </div>
-            <div className="form-group">
-                <button type="submit" className="btn btn-primary">Save</button>
-            </div>
-        </form>
+        <div className="form-group">
+            <label htmlFor="currentItemHref">Href</label>
+            <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control" defaultValue={item.href} />
+        </div>
+        <div className="form-group">
+            <textarea ref={(c) => text = c} title="text" className="form-control" rows="18" defaultValue={item.text}></textarea>
+        </div>
+        <div className="form-group">
+            <DeleteButton item={item} />
+            <SaveButtons item={item} saveItem={saveItem} saveToLearn={saveToLearn} saveToRepeat={saveToRepeat} />
+            <LearnedButton item={item} />
+        </div>
     </div>;
 }
 
@@ -337,6 +406,13 @@ var ItemMap = React.createClass({
             store.dispatch({type: 'LOAD_ITEM', id: id, mode: 'map'});
         }
 
+        function unlink(id)
+        {
+            if (confirm('Really unlink?')) {
+                store.dispatch({type: 'UNLINK_ITEM', id: id});
+            }
+        }
+
         return <div className="tab-pane active" id="map">
             {mapFields(
                 this.props.links,
@@ -345,11 +421,12 @@ var ItemMap = React.createClass({
                     var className = 'item item' + link.item.id + ' panel panel-default';
                     return <div data-id={link.item.id} key={link.item.id} className={className}
                                 style={{left: link.x, top: link.y}}>
-                        <div className="panel-body">
+                        <div className="panel-heading">
                             <span className="glyphicon glyphicon-move"></span>
-                            <span onClick={function() {gotoItem(link.item.id);}} className="open-item-map glyphicon glyphicon-eye-open"></span>
-                            {text}
+                            <span onClick={() => gotoItem(link.item.id)} className="open-item-map glyphicon glyphicon-eye-open"></span>
+                            <span onClick={() => unlink(link.item.id)} className="glyphicon glyphicon-remove"></span>
                         </div>
+                        <div className="panel-body">{text}</div>
                     </div>;
                 }
             )}
