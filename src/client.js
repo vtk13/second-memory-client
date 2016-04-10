@@ -72,11 +72,11 @@ function saveItem(item, success)
 {
     if (item.id) {
         client.default.put_items_id(item, function(res) {
-            success(res.obj.item);
+            success(res.obj);
         });
     } else {
         client.default.post_items(item, function(res) {
-            success(res.obj.item);
+            success(res.obj);
         });
     }
 }
@@ -114,7 +114,7 @@ function counter(state, action) {
                 if (res.status == 404) {
                     store.dispatch({type: 'RESET_ITEM'});
                 } else {
-                    store.dispatch({type: 'SET_ITEM', item: res.obj.items, mode: action.mode});
+                    store.dispatch({type: 'SET_ITEM', item: res.obj, mode: action.mode});
                 }
             });
             break;
@@ -233,7 +233,7 @@ function counter(state, action) {
                     res.obj.map(function(link) {
                         client.default.get_items_id({id: link.right}, function(res) {
                             n++;
-                            var item = res.obj.items;
+                            var item = res.obj;
                             links[item.id].item = item;
 
                             if (n == countFields(links)) {
@@ -253,7 +253,7 @@ function counter(state, action) {
                 if (res.status == 204) {
                     store.dispatch({type: 'RESET_ITEM'});
                 } else {
-                    store.dispatch({type: 'SET_ITEM', item: res.obj.item, canRepeat: true});
+                    store.dispatch({type: 'SET_ITEM', item: res.obj, canRepeat: true});
                 }
             });
             break;
@@ -516,7 +516,7 @@ $('.search-panel-form').submit(function() {
         function (res) {
             var list = $('.search-panel-results');
             list.empty();
-            res.obj.items.forEach(function(item) {
+            res.obj.forEach(function(item) {
                 var element = $('<li class="list-group-item search-panel-results-item" />');
                 element.html(item.text.split('\n')[0]
                     + ' <span class="glyphicon glyphicon-new-window pull-right"></span>'
