@@ -1,6 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+source .env
+
+npm install
 rm -f public/client.js public/test.js public/vendor.js
-node_modules/webpack/bin/webpack.js
+node node_modules/webpack/bin/webpack.js
 cp -Rf node_modules/bootstrap/dist/ public/css/bootstrap
 
 echo "You can run:"

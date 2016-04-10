@@ -1,5 +1,7 @@
 body {
     padding-top: 65px;
+    max-width: 1366px;
+    margin: 0 auto;
 }
 
 #map {

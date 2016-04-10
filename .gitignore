@@ -11,3 +11,4 @@
 /public/css/bootstrap/
 .DS_Store
 /watch.sh
+/.env

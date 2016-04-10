@@ -32,6 +32,8 @@ module.exports = {
             }
         ]),
         new webpack.DefinePlugin({
+            API_HOST: "'" + process.env.API_HOST + "'",
+            USE_BASIC: "'" + process.env.USE_BASIC + "'",
             BASIC_SERVER_USER: "'" + process.env.BASIC_SERVER_USER + "'",
             BASIC_SERVER_PASSWORD: "'" + process.env.BASIC_SERVER_PASSWORD + "'"
         })

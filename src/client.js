@@ -7,16 +7,22 @@ import ReactDOM from 'react-dom';
 
 import url from './url';
 
-window.client = new Swagger({
+var settings = {
     url: '/swagger-api.yml',
     success: function() {
+        this.setHost(API_HOST);
         store.dispatch({type: 'INIT'});
     },
-    authorizations: {
-        easyapi_basic: new Swagger.PasswordAuthorization(BASIC_SERVER_USER, BASIC_SERVER_PASSWORD)
-    },
     enableCookies: true
-});
+};
+
+if (USE_BASIC) {
+    settings.authorizations = {
+        easyapi_basic: new Swagger.PasswordAuthorization(BASIC_SERVER_USER, BASIC_SERVER_PASSWORD)
+    };
+}
+
+window.client = new Swagger(settings);
 //*/
 
 function mapFields(obj, callback)
