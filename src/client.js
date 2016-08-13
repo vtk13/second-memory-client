@@ -4,6 +4,7 @@ import bootstap from 'bootstrap';
 import { createStore } from 'redux';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import AlloyEditor from 'alloyeditor';
 
 import url from './url';
 
@@ -358,24 +359,17 @@ var SaveButtons = React.createClass({
 
 var ItemEditor = React.createClass({
     componentDidMount: function() {
-        window.tinymce.init({
-            selector: 'textarea',
-            setup: function (editor) {
-                editor.on('change', function () {
-                    window.tinymce.triggerSave();
-                });
-            }
-        });
+        this.alloyEditor = AlloyEditor.editable('myContentEditable');
     },
     render: function() {
-        var text, href;
+        var href, self = this;
 
         function saveItemWithType(type) {
             store.dispatch({
                 type: 'SAVE_CURRENT_ITEM',
                 item: {
                     type: type,
-                    text: text.value,
+                    text: self.alloyEditor.get('nativeEditor').getData(),
                     href: href.value
                 }
             });
@@ -400,7 +394,7 @@ var ItemEditor = React.createClass({
                        defaultValue={this.props.item.href}/>
             </div>
             <div className="form-group">
-                <textarea ref={(c) => text = c} title="text" className="form-control" rows="18"
+                <textarea id="myContentEditable" title="text" className="form-control" rows="18"
                           defaultValue={this.props.item.text}></textarea>
             </div>
             <div className="form-group">

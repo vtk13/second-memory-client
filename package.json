@@ -7,6 +7,7 @@
     "doc": "docs"
   },
   "dependencies": {
+    "alloyeditor": "^1.2.3",
     "bootstrap": "^3.3.6",
     "component-emitter": "^1.2.0",
     "jquery": "^2.2.1",

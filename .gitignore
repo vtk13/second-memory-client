@@ -9,6 +9,7 @@
 /public/client.js
 /public/test.js
 /public/css/bootstrap/
+/public/css/alloy-editor/
 .DS_Store
 /watch.sh
 /.env
