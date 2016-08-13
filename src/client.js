@@ -87,7 +87,7 @@ function counter(state, action) {
         canRepeat: false,
         currentItem: null,
         currentItemLinks: {},
-        currentItemMode: 'preview'
+        currentItemMode: 'edit'
     };
 
     state.inProgress = false;
@@ -206,7 +206,7 @@ function counter(state, action) {
             }
             break;
         case 'SET_ITEM':
-            state.currentItemMode = action.mode || 'preview';
+            state.currentItemMode = action.mode || 'edit';
             // no break
         case 'UPDATE_ITEM':
             state.currentItemMode = action.mode || state.currentItemMode;
@@ -286,15 +286,6 @@ function counter(state, action) {
 
 window.store = createStore(counter);
 
-function ItemPreview({item})
-{
-    return <div className="tab-pane active">
-        <div style={{marginBottom: '10px'}}>id: <a href={url.getItemUrl(item.id)}>{item.id}</a></div>
-        <pre>{item.text}</pre>
-        <RepeatedButton item={item} />
-    </div>;
-}
-
 var RepeatedButton = React.createClass({
     render: function() {
         var item = this.props.item;
@@ -365,41 +356,63 @@ var SaveButtons = React.createClass({
     }
 });
 
-function ItemEditor({item})
-{
-    var text, href;
-
-    function saveItemWithType(type)
-    {
-        store.dispatch({
-            type: 'SAVE_CURRENT_ITEM',
-            item: {
-                type: type,
-                text: text.value,
-                href: href.value
+var ItemEditor = React.createClass({
+    componentDidMount: function() {
+        window.tinymce.init({
+            selector: 'textarea',
+            setup: function (editor) {
+                editor.on('change', function () {
+                    window.tinymce.triggerSave();
+                });
             }
         });
+    },
+    render: function() {
+        var text, href;
+
+        function saveItemWithType(type) {
+            store.dispatch({
+                type: 'SAVE_CURRENT_ITEM',
+                item: {
+                    type: type,
+                    text: text.value,
+                    href: href.value
+                }
+            });
+        }
+
+        function saveItem() {
+            saveItemWithType();
+        }
+
+        function saveToLearn() {
+            saveItemWithType(1);
+        }
+
+        function saveToRepeat() {
+            saveItemWithType(0);
+        }
+
+        return <div className="tab-pane active">
+            <div className="form-group">
+                <label htmlFor="currentItemHref">Href</label>
+                <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control"
+                       defaultValue={this.props.item.href}/>
+            </div>
+            <div className="form-group">
+                <textarea ref={(c) => text = c} title="text" className="form-control" rows="18"
+                          defaultValue={this.props.item.text}></textarea>
+            </div>
+            <div className="form-group">
+                <DeleteButton item={this.props.item}/>
+                <SaveButtons item={this.props.item} saveItem={saveItem} saveToLearn={saveToLearn}
+                             saveToRepeat={saveToRepeat}/>
+                <LearnedButton item={this.props.item}/>
+                <RepeatedButton item={this.props.item} />
+            </div>
+        </div>;
     }
-
-    function saveItem() { saveItemWithType(); }
-    function saveToLearn() { saveItemWithType(1); }
-    function saveToRepeat() { saveItemWithType(0); }
-
-    return <div className="tab-pane active">
-        <div className="form-group">
-            <label htmlFor="currentItemHref">Href</label>
-            <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control" defaultValue={item.href} />
-        </div>
-        <div className="form-group">
-            <textarea ref={(c) => text = c} title="text" className="form-control" rows="18" defaultValue={item.text}></textarea>
-        </div>
-        <div className="form-group">
-            <DeleteButton item={item} />
-            <SaveButtons item={item} saveItem={saveItem} saveToLearn={saveToLearn} saveToRepeat={saveToRepeat} />
-            <LearnedButton item={item} />
-        </div>
-    </div>;
-}
+});
 
 var ItemMap = React.createClass({
     render: function() {
@@ -451,9 +464,6 @@ function ItemHyperLink({item})
 
 function ItemWorkspace({item, links, mode})
 {
-    function onPreview() {
-        store.dispatch({type: 'SET_ITEM_MODE', mode: 'preview'});
-    }
     function onEdit() {
         store.dispatch({type: 'SET_ITEM_MODE', mode: 'edit'});
     }
@@ -462,7 +472,6 @@ function ItemWorkspace({item, links, mode})
     }
 
     var menu = [
-        {id: 'preview', caption: 'Preview', onClick: onPreview, active: mode == 'preview'},
         {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'}
     ];
     if (item && item.id) {
@@ -472,8 +481,6 @@ function ItemWorkspace({item, links, mode})
     function CurrentItemState()
     {
         switch (mode) {
-            case 'preview':
-                return <ItemPreview item={item} />;
             case 'edit':
                 return <ItemEditor item={item} />;
                 break;
