@@ -66,7 +66,6 @@ function getCoords(elem) {
         top: box.top + pageYOffset - rel.top,
         left: box.left + pageXOffset - rel.left
     };
-
 }
 
 function saveItem(item, success)
@@ -359,6 +358,58 @@ var SaveButtons = React.createClass({
 
 var ItemEditor = React.createClass({
     componentDidMount: function() {
+        var tableClasses = [
+            {
+                name: 'Normal Table',
+                cssClass: 'table'
+            },
+            {
+                name: 'Striped Rows',
+                cssClass: 'table table-striped'
+            },
+            {
+                name: 'Bordered Table',
+                cssClass: 'table table-bordered'
+            },
+            {
+                name: 'Hover Rows',
+                cssClass: 'table table-hover'
+            },
+            {
+                name: 'Condensed Table',
+                cssClass: 'table table-condensed'
+            }
+        ];
+
+        var tableStyles = tableClasses.map(function(styleDefinition) {
+            return {
+                name: styleDefinition.name,
+                style: {
+                    element: 'table',
+                    attributes: {
+                        'class': styleDefinition.cssClass
+                    }
+                }
+            }
+        });
+
+        var tableSelection;
+
+        for (var i = 0; i < AlloyEditor.Selections.length; i++) {
+            tableSelection = AlloyEditor.Selections[i];
+
+            if (tableSelection.name === 'table') {
+                tableSelection.buttons.unshift({
+                    name: 'styles',
+                    cfg: {
+                        styles: tableStyles
+                    }
+                });
+
+                break;
+            }
+        }
+
         this.alloyEditor = AlloyEditor.editable('myContentEditable');
     },
     render: function() {
