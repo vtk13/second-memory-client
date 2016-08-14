@@ -21,6 +21,9 @@ body {
 .glyphicon-new-window {
     cursor: pointer;
 }
+.current-item-container {
+    padding-left: 40px;
+}
 .current-item-container-tabs {
     margin-bottom: 15px;
 }

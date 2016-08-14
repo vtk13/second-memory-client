@@ -441,22 +441,20 @@ var ItemEditor = React.createClass({
             saveItemWithType(0);
         }
 
-        return <div className="tab-pane active">
-            <div className="form-group">
-                <label htmlFor="currentItemTitle">Title</label>
-                <input id="currentItemTitle" ref={(c) => title = c} title="title" className="form-control"
-                       defaultValue={this.props.item.title}/>
+        return <div className="tab-pane active row">
+            <div className="form-group col-xs-6">
+                <input ref={(c) => title = c} title="title" className="form-control"
+                       defaultValue={this.props.item.title} placeholder="title"/>
             </div>
-            <div className="form-group">
-                <label htmlFor="currentItemHref">Href</label>
-                <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control"
-                       defaultValue={this.props.item.href}/>
+            <div className="form-group col-xs-6">
+                <input ref={(c) => href = c} title="href" className="form-control"
+                       defaultValue={this.props.item.href} placeholder="href"/>
             </div>
-            <div className="form-group">
+            <div className="form-group col-xs-12">
                 <textarea id="myContentEditable" title="text" className="form-control" rows="18"
                           defaultValue={this.props.item.text}></textarea>
             </div>
-            <div className="form-group">
+            <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
                 <SaveButtons item={this.props.item} saveItem={saveItem} saveToLearn={saveToLearn}
                              saveToRepeat={saveToRepeat}/>
