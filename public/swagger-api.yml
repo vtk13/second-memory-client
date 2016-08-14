@@ -24,6 +24,7 @@ paths:
       summary: Add new item for repetition or lerning
       parameters:
         - $ref: "#/parameters/itemType"
+        - $ref: "#/parameters/itemTitle"
         - $ref: "#/parameters/itemText"
         - $ref: "#/parameters/itemHref"
       responses:
@@ -37,6 +38,7 @@ paths:
       parameters:
         - $ref: "#/parameters/itemId"
         - $ref: "#/parameters/itemType"
+        - $ref: "#/parameters/itemTitle"
         - $ref: "#/parameters/itemText"
         - $ref: "#/parameters/itemHref"
       responses:
@@ -157,6 +159,10 @@ parameters:
     in: formData
     description: 'Type of item, 0 - primary, 1 - to learn'
     type: integer
+  itemTitle:
+    name: title
+    in: formData
+    type: string
   itemText:
     name: text
     in: formData
@@ -197,6 +203,8 @@ definitions:
         type: integer
       type:
         type: integer
+      title:
+        type: string
       text:
         type: string
       href:

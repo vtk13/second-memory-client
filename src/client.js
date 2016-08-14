@@ -128,6 +128,7 @@ function counter(state, action) {
             state.currentItem = {
                 id: null,
                 type: 0,
+                title: '',
                 text: '',
                 href: ''
             };
@@ -140,6 +141,7 @@ function counter(state, action) {
             if (action.item.type !== undefined) {
                 state.currentItem.type = action.item.type;
             }
+            state.currentItem.title = action.item.title;
             state.currentItem.text = action.item.text;
             state.currentItem.href = action.item.href;
             state.inProgress = true;
@@ -214,7 +216,7 @@ function counter(state, action) {
             state.currentItem = action.item || state.currentItem;
             state.currentItemLinks = [];
             url.setItemId(state.currentItem.id);
-            document.title = state.currentItem.text ? state.currentItem.text.split('\n')[0] : 'Second Memory';
+            document.title = state.currentItem.title;
 
             // load links
             state.inProgress = true;
@@ -413,7 +415,7 @@ var ItemEditor = React.createClass({
         this.alloyEditor = AlloyEditor.editable('myContentEditable');
     },
     render: function() {
-        var href, self = this;
+        var title, href, self = this;
 
         function saveItemWithType(type) {
             store.dispatch({
@@ -421,6 +423,7 @@ var ItemEditor = React.createClass({
                 item: {
                     type: type,
                     text: self.alloyEditor.get('nativeEditor').getData(),
+                    title: title.value,
                     href: href.value
                 }
             });
@@ -439,6 +442,11 @@ var ItemEditor = React.createClass({
         }
 
         return <div className="tab-pane active">
+            <div className="form-group">
+                <label htmlFor="currentItemTitle">Title</label>
+                <input id="currentItemTitle" ref={(c) => title = c} title="title" className="form-control"
+                       defaultValue={this.props.item.title}/>
+            </div>
             <div className="form-group">
                 <label htmlFor="currentItemHref">Href</label>
                 <input id="currentItemHref" ref={(c) => href = c} title="href" className="form-control"
@@ -481,7 +489,7 @@ var ItemMap = React.createClass({
             {mapFields(
                 this.props.links,
                 function (link) {
-                    var text = link.item.text.split('\n')[0];
+                    var title = link.item.title;
                     var className = 'item item' + link.item.id + ' panel panel-default';
                     return <div data-id={link.item.id} key={link.item.id} className={className}
                                 style={{left: link.x, top: link.y}}>
@@ -490,7 +498,7 @@ var ItemMap = React.createClass({
                             <span onClick={() => gotoItem(link.item.id)} className="open-item-map glyphicon glyphicon-eye-open"></span>
                             <span onClick={() => unlink(link.item.id)} className="glyphicon glyphicon-remove"></span>
                         </div>
-                        <div className="panel-body">{text}</div>
+                        <div className="panel-body">{title}</div>
                     </div>;
                 }
             )}
@@ -570,7 +578,7 @@ $('.search-panel-form').submit(function() {
             list.empty();
             res.obj.forEach(function(item) {
                 var element = $('<li class="list-group-item search-panel-results-item" />');
-                element.html(item.text.split('\n')[0]
+                element.html(item.title
                     + ' <span class="glyphicon glyphicon-new-window pull-right"></span>'
                     + ' <span class="glyphicon glyphicon-import pull-right"></span>'
                 );
