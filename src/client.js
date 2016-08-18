@@ -288,6 +288,10 @@ function counter(state, action) {
 
 window.store = createStore(counter);
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+////// REACT COMPONENTS //////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 var RepeatedButton = React.createClass({
     render: function() {
         var item = this.props.item;
@@ -513,49 +517,55 @@ function ItemHyperLink({item})
     }
 }
 
-function ItemWorkspace({item, links, mode})
-{
-    function onEdit() {
-        store.dispatch({type: 'SET_ITEM_MODE', mode: 'edit'});
-    }
-    function onMap() {
-        store.dispatch({type: 'SET_ITEM_MODE', mode: 'map'});
-    }
-
-    var menu = [
-        {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'}
-    ];
-    if (item && item.id) {
-        menu.push({id: 'map', caption: 'Map', onClick: onMap, active: mode == 'map'});
-    }
-
-    function CurrentItemState()
-    {
-        switch (mode) {
+var CurrentItemState = React.createClass({
+    render: function() {
+        switch (this.props.mode) {
             case 'edit':
-                return <ItemEditor item={item} />;
-                break;
+                return <ItemEditor item={this.props.item} />;
             case 'map':
-                return <ItemMap item={item} links={links} />;
-                break;
+                return <ItemMap item={this.props.item} links={this.props.links} />;
         }
     }
+});
 
-    if (item) {
-        return <div>
-            <ul className="nav nav-tabs current-item-container-tabs">
-                {menu.map(function(menuItem) {
-                    var className = menuItem.active ? 'active' : '';
-                    return <li key={menuItem.id} className={className}><a href="#" onClick={menuItem.onClick}>{menuItem.caption}</a></li>
-                })}
-                <ItemHyperLink item={item} />
-            </ul>
-            <CurrentItemState />
-        </div>
-    } else {
-        return <p>No current item selected</p>;
+var ItemWorkspace = React.createClass({
+    render: function() {
+        var {item, links, mode} = this.props;
+
+        function onEdit() {
+            store.dispatch({type: 'SET_ITEM_MODE', mode: 'edit'});
+        }
+        function onMap() {
+            store.dispatch({type: 'SET_ITEM_MODE', mode: 'map'});
+        }
+
+        var menu = [
+            {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'}
+        ];
+        if (item && item.id) {
+            menu.push({id: 'map', caption: 'Map', onClick: onMap, active: mode == 'map'});
+        }
+
+        if (item) {
+            return <div>
+                <ul className="nav nav-tabs current-item-container-tabs">
+                    {menu.map(function(menuItem) {
+                        var className = menuItem.active ? 'active' : '';
+                        return <li key={menuItem.id} className={className}><a href="#" onClick={menuItem.onClick}>{menuItem.caption}</a></li>
+                    })}
+                    <ItemHyperLink item={item} />
+                </ul>
+                <CurrentItemState mode={mode} item={item} links={links} />
+            </div>
+        } else {
+            return <p>No current item selected</p>;
+        }
     }
-}
+});
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+///// Bootstrap ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
 
 store.subscribe(function() {
     var state = store.getState();

@@ -29,7 +29,7 @@
     "webpack-split-by-path": "0.0.7"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node_modules/webpack/bin/webpack.js -w"
   },
   "repository": {
     "type": "git",
