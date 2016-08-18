@@ -26,17 +26,6 @@ if (USE_BASIC) {
 window.client = new Swagger(settings);
 //*/
 
-function mapFields(obj, callback)
-{
-    var res = [];
-    for (var i in obj) {
-        if (obj.hasOwnProperty(i)) {
-            res.push(callback(obj[i], i));
-        }
-    }
-    return res;
-}
-
 function countFields(obj)
 {
     var res = 0;
@@ -469,44 +458,7 @@ var ItemEditor = React.createClass({
     }
 });
 
-var ItemMap = React.createClass({
-    render: function() {
-        if (!this.props.item.id) {
-            return false;
-        }
-
-        function gotoItem(id)
-        {
-            store.dispatch({type: 'LOAD_ITEM', id: id, mode: 'map'});
-        }
-
-        function unlink(id)
-        {
-            if (confirm('Really unlink?')) {
-                store.dispatch({type: 'UNLINK_ITEM', id: id});
-            }
-        }
-
-        return <div className="tab-pane active" id="map">
-            {mapFields(
-                this.props.links,
-                function (link) {
-                    var title = link.item.title;
-                    var className = 'item item' + link.item.id + ' panel panel-default';
-                    return <div data-id={link.item.id} key={link.item.id} className={className}
-                                style={{left: link.x, top: link.y}}>
-                        <div className="panel-heading">
-                            <span className="glyphicon glyphicon-move"></span>
-                            <span onClick={() => gotoItem(link.item.id)} className="open-item-map glyphicon glyphicon-eye-open"></span>
-                            <span onClick={() => unlink(link.item.id)} className="glyphicon glyphicon-remove"></span>
-                        </div>
-                        <div className="panel-body">{title}</div>
-                    </div>;
-                }
-            )}
-        </div>;
-    }
-});
+import {ItemMap} from './components/mindmap'
 
 function ItemHyperLink({item})
 {
@@ -523,7 +475,7 @@ var CurrentItemState = React.createClass({
             case 'edit':
                 return <ItemEditor item={this.props.item} />;
             case 'map':
-                return <ItemMap item={this.props.item} links={this.props.links} />;
+                return <ItemMap store={store} item={this.props.item} links={this.props.links} />;
         }
     }
 });
