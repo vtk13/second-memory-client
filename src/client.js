@@ -413,6 +413,7 @@ var MyWysiwyg = React.createClass({
 
         this.alloyEditor = AlloyEditor.editable('myContentEditable');
         this.alloyEditor.get('nativeEditor').on('change', this.handleChange);
+        this.alloyEditor.get('nativeEditor').on('afterCommandExec', this.handleChange);
     },
     render: function() {
         return <textarea
