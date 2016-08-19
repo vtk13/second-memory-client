@@ -13,12 +13,14 @@ body {
     max-height: 100px;
     overflow: hidden;
     position: absolute;
+    z-index: 50;
 }
 .item>.panel-heading {
     display: none;
 }
 .item:hover, .item.dragging {
     margin-top: -31px;
+    z-index: 100;
 }
 .item.dragging>.panel-heading,
 .item:hover>.panel-heading {
