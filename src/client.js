@@ -329,7 +329,35 @@ var SaveButtons = React.createClass({
     }
 });
 
-var ItemEditor = React.createClass({
+var MyInput = React.createClass({
+    getInitialState: function() {
+        return {value: this.props.value};
+    },
+    componentWillReceiveProps: function(nextProps) {
+        this.setState({value: nextProps.value});
+    },
+    handleChange: function(e) {
+        this.props.onChange(e.target.value);
+        this.setState({value: e.target.value});
+    },
+    render: function() {
+        return <input
+            title={this.props.name}
+            className="form-control"
+            value={this.state.value}
+            onChange={this.handleChange}
+            placeholder={this.props.name} />
+    }
+});
+
+var MyWysiwyg = React.createClass({
+    componentWillReceiveProps: function(nextProps) {
+        this.alloyEditor.get('nativeEditor').setData(nextProps.value);
+    },
+    handleChange: function(e) {
+        var newValue = this.alloyEditor.get('nativeEditor').getData();
+        this.props.onChange(newValue);
+    },
     componentDidMount: function() {
         var tableClasses = [
             {
@@ -384,18 +412,30 @@ var ItemEditor = React.createClass({
         }
 
         this.alloyEditor = AlloyEditor.editable('myContentEditable');
+        this.alloyEditor.get('nativeEditor').on('change', this.handleChange);
     },
     render: function() {
-        var title, href, self = this;
+        return <textarea
+            id="myContentEditable"
+            title={this.props.name}
+            className="form-control"
+            rows="18"
+            defaultValue={this.props.value} />;
+    }
+});
+
+var ItemEditor = React.createClass({
+    render: function() {
+        var {title, href, text} = this.props.item;
 
         function saveItemWithType(type) {
             store.dispatch({
                 type: 'SAVE_CURRENT_ITEM',
                 item: {
                     type: type,
-                    text: self.alloyEditor.get('nativeEditor').getData(),
-                    title: title.value,
-                    href: href.value
+                    text: text,
+                    title: title,
+                    href: href
                 }
             });
         }
@@ -414,16 +454,13 @@ var ItemEditor = React.createClass({
 
         return <div className="tab-pane active row">
             <div className="form-group col-xs-6">
-                <input ref={(c) => title = c} title="title" className="form-control"
-                       defaultValue={this.props.item.title} placeholder="title"/>
+                <MyInput name="title" value={title} onChange={(value) => title = value} />
             </div>
             <div className="form-group col-xs-6">
-                <input ref={(c) => href = c} title="href" className="form-control"
-                       defaultValue={this.props.item.href} placeholder="href"/>
+                <MyInput name="href" value={href} onChange={(value) => href = value}/>
             </div>
             <div className="form-group col-xs-12">
-                <textarea id="myContentEditable" title="text" className="form-control" rows="18"
-                          defaultValue={this.props.item.text}></textarea>
+                <MyWysiwyg name="text" value={text} onChange={(value) => text = value}/>
             </div>
             <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
