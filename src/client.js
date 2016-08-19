@@ -35,28 +35,6 @@ function countFields(obj)
     return res;
 }
 
-function sumRelativeOffset(elem, initial)
-{
-    initial = initial || {top: 0, left: 0};
-
-    var res = {
-        top: initial.top + elem.offsetTop,
-        left: initial.left + elem.offsetLeft
-    };
-
-    return elem.offsetParent ? sumRelativeOffset(elem.offsetParent, res) : res;
-}
-
-function getCoords(elem) {
-    var box = elem.getBoundingClientRect();
-    var rel = sumRelativeOffset(elem.offsetParent);
-
-    return {
-        top: box.top + pageYOffset - rel.top,
-        left: box.left + pageXOffset - rel.left
-    };
-}
-
 function saveItem(item, success)
 {
     if (item.id) {
@@ -569,37 +547,6 @@ $('.main-menu-learn').click(function() {
     store.dispatch({type: 'LEARN'});
     return false;
 });
-
-$('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}) {
-    var item = $(this).parents('.item').get(0);
-    var e = originalEvent;
-
-    var coords = getCoords(item);
-    var shiftX = e.pageX - coords.left;
-    var shiftY = e.pageY - coords.top;
-
-    moveAt(e);
-
-    function moveAt(e) {
-        item.style.left = (e.pageX - shiftX) + 'px';
-        item.style.top = (e.pageY - shiftY) + 'px';
-    }
-
-    document.onmousemove = function (e) {
-        moveAt(e);
-    };
-
-    item.onmouseup = function() {
-        store.dispatch({
-            type: 'SET_ITEM_XY',
-            id: $(this).data('id'),
-            x: Number.parseInt(item.style.left),
-            y: Number.parseInt(item.style.top)
-        });
-        document.onmousemove = null;
-        item.onmouseup = null;
-    };
-}).on('dragstart', '#map .item .glyphicon-move', function() { return false; });
 
 window.onpopstate = function(event) {
     var [userId, itemId] = url.info();

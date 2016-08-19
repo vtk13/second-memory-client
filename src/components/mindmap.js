@@ -1,4 +1,5 @@
 import React from 'react'
+import $ from 'jquery'
 
 function mapFields(obj, callback)
 {
@@ -9,7 +10,59 @@ function mapFields(obj, callback)
         }
     }
     return res;
+}function sumRelativeOffset(elem, initial)
+{
+    initial = initial || {top: 0, left: 0};
+
+    var res = {
+        top: initial.top + elem.offsetTop,
+        left: initial.left + elem.offsetLeft
+    };
+
+    return elem.offsetParent ? sumRelativeOffset(elem.offsetParent, res) : res;
 }
+
+function getCoords(elem) {
+    var box = elem.getBoundingClientRect();
+    var rel = sumRelativeOffset(elem.offsetParent, {top: -31, left: 0});
+
+    return {
+        top: box.top + pageYOffset - rel.top,
+        left: box.left + pageXOffset - rel.left
+    };
+}
+
+$('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}) {
+    var item = $(this).parents('.item').addClass('dragging').get(0);
+    var e = originalEvent;
+
+    var coords = getCoords(item);
+    var shiftX = e.pageX - coords.left;
+    var shiftY = e.pageY - coords.top;
+
+    moveAt(e);
+
+    function moveAt(e) {
+        item.style.left = (e.pageX - shiftX) + 'px';
+        item.style.top = (e.pageY - shiftY) + 'px';
+    }
+
+    document.onmousemove = function (e) {
+        moveAt(e);
+    };
+
+    item.onmouseup = function() {
+        store.dispatch({
+            type: 'SET_ITEM_XY',
+            id: $(this).data('id'),
+            x: Number.parseInt(item.style.left),
+            y: Number.parseInt(item.style.top)
+        });
+        document.onmousemove = null;
+        item.onmouseup = null;
+        $(item).removeClass('dragging');
+    };
+}).on('dragstart', '#map .item .glyphicon-move', function() { return false; });
 
 var MindmapItem = React.createClass({
     render: function() {
@@ -19,7 +72,8 @@ var MindmapItem = React.createClass({
         return (
             <div data-id={link.item.id}
                  className={className}
-                 style={{left: link.x, top: link.y}}>
+                 style={{left: link.x, top: link.y}}
+            >
                 <div className="panel-heading">
                     <span className="glyphicon glyphicon-move" />
                     <span onClick={() => this.props.onGotoItem(link.item.id)}

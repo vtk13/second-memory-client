@@ -14,6 +14,16 @@ body {
     overflow: hidden;
     position: absolute;
 }
+.item>.panel-heading {
+    display: none;
+}
+.item:hover, .item.dragging {
+    margin-top: -31px;
+}
+.item.dragging>.panel-heading,
+.item:hover>.panel-heading {
+    display: block;
+}
 .item>.panel-body {
     padding: 5px;
 }
