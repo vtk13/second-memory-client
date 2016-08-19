@@ -355,8 +355,12 @@ var MyWysiwyg = React.createClass({
         this.alloyEditor.get('nativeEditor').setData(nextProps.value);
     },
     handleChange: function(e) {
-        var newValue = this.alloyEditor.get('nativeEditor').getData();
-        this.props.onChange(newValue);
+        // strange bug with previous value
+        setTimeout(() => {
+            var newValue = this.alloyEditor.get('nativeEditor').getData();
+            console.log(newValue);
+            this.props.onChange(newValue);
+        }, 0);
     },
     componentDidMount: function() {
         var tableClasses = [
