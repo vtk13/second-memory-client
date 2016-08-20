@@ -154,12 +154,24 @@ var ItemMap = React.createClass({
     handleSubmit: function(id, title) {
         this.props.store.dispatch({type: 'UPDATE_LINK_TITLE', id: id, title: title});
     },
+    handleDoubleClick: function(e) {
+        var title = prompt('Title');
+        var coords = getCoords(document.getElementById('map'));
+        if (title !== null) {
+            this.props.store.dispatch({
+                type: 'CREATE_AND_LINK_ITEM',
+                title: title,
+                x: e.clientX - coords.left,
+                y: e.clientY - coords.top - 31
+            });
+        }
+    },
     render: function() {
         if (!this.props.item.id) {
             return false;
         }
 
-        return <div className="tab-pane active" id="map">
+        return <div className="tab-pane active" id="map" onDoubleClick={this.handleDoubleClick}>
             {mapFields(
                 this.props.links,
                 (link) => <MindmapItem

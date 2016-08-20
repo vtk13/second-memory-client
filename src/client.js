@@ -124,9 +124,31 @@ function counter(state, action) {
         case 'SET_ITEM_LINKS':
             state.currentItemLinks = action.links;
             break;
+        case 'CREATE_AND_LINK_ITEM':
+            var newItem = {
+                id: null,
+                type: 0,
+                title: action.title,
+                text: '',
+                href: ''
+            };
+            state.inProgress = true;
+            saveItem(newItem, function(savedItem) {
+                store.dispatch({
+                    type: 'LINK_ITEM',
+                    item: savedItem,
+                    x: action.x,
+                    y: action.y
+                });
+            });
+            break;
         case 'LINK_ITEM':
             if (!state.currentItemLinks[action.item.id]) {
-                state.currentItemLinks[action.item.id] = {item: action.item, x: 0, y: 0};
+                state.currentItemLinks[action.item.id] = {
+                    item: action.item,
+                    x: action.x || 0,
+                    y: action.y || 0
+                };
                 state.currentItemMode = 'map';
                 state.inProgress = true;
                 client.default.put_items_id_links(
@@ -134,8 +156,8 @@ function counter(state, action) {
                         id: state.currentItem.id,
                         right: action.item.id,
                         type_id: 0,
-                        x: 0,
-                        y: 0
+                        x: action.x || 0,
+                        y: action.y || 0
                     },
                     function() {
                         store.dispatch({type: 'NOP'});
