@@ -1,5 +1,7 @@
 import React from 'react'
+import ReactDOM from 'react-dom'
 import $ from 'jquery'
+import {SmTextInput} from './elements'
 
 function mapFields(obj, callback)
 {
@@ -10,7 +12,9 @@ function mapFields(obj, callback)
         }
     }
     return res;
-}function sumRelativeOffset(elem, initial)
+}
+
+function sumRelativeOffset(elem, initial)
 {
     initial = initial || {top: 0, left: 0};
 
@@ -65,10 +69,55 @@ $('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}
 }).on('dragstart', '#map .item .glyphicon-move', function() { return false; });
 
 var MindmapItem = React.createClass({
+    getInitialState: function() {
+        return {
+            id: this.props.link.item.id,
+            title: this.props.link.item.title,
+            readonly: true
+        }
+    },
+    handleEdit: function() {
+        this.setState({
+            id: this.state.id,
+            title: this.state.title,
+            readonly: false
+        });
+    },
+    handleSubmit: function(e) {
+        e.preventDefault();
+        this.setState({
+            id: this.state.id,
+            title: this.state.title,
+            readonly: true
+        });
+        this.props.onSubmit(this.state.id, this.state.title)
+    },
+    componentDidUpdate: function() {
+        if (this.state.input) {
+            var node = ReactDOM.findDOMNode(this.state.input);
+            node.focus();
+            node.selectionStart = node.selectionEnd = node.value.length;
+        }
+    },
     render: function() {
         var {link} = this.props;
-        var title = link.item.title;
         var className = 'item item' + link.item.id + ' panel panel-default';
+
+        var title, editBtn;
+        if (this.state.readonly) {
+            title = this.state.title;
+            editBtn = <span onClick={this.handleEdit} className="open-item-map glyphicon glyphicon-edit" />;
+            this.state.input = null;
+        } else {
+            title = <form onSubmit={this.handleSubmit}>
+                    <SmTextInput ref={(input) => this.state.input = input}
+                        name="title"
+                        onChange={(value) => this.state.title = value}
+                        value={this.state.title} />
+                </form>;
+            editBtn = '';
+        }
+
         return (
             <div data-id={link.item.id}
                  className={className}
@@ -78,6 +127,7 @@ var MindmapItem = React.createClass({
                     <span className="glyphicon glyphicon-move" />
                     <span onClick={() => this.props.onGotoItem(link.item.id)}
                           className="open-item-map glyphicon glyphicon-eye-open" />
+                    {editBtn}
                     <span onClick={() => this.props.onUnlink(link.item.id)}
                           className="glyphicon glyphicon-remove" />
                 </div>
@@ -101,6 +151,9 @@ var ItemMap = React.createClass({
             this.props.store.dispatch({type: 'UNLINK_ITEM', id: id});
         }
     },
+    handleSubmit: function(id, title) {
+        this.props.store.dispatch({type: 'UPDATE_LINK_TITLE', id: id, title: title});
+    },
     render: function() {
         if (!this.props.item.id) {
             return false;
@@ -110,6 +163,7 @@ var ItemMap = React.createClass({
             {mapFields(
                 this.props.links,
                 (link) => <MindmapItem
+                        onSubmit={this.handleSubmit}
                         key={link.item.id}
                         link={link}
                         onGotoItem={this.gotoItem}

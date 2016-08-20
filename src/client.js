@@ -4,7 +4,6 @@ import bootstap from 'bootstrap';
 import { createStore } from 'redux';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import AlloyEditor from 'alloyeditor';
 
 import url from './url';
 
@@ -174,6 +173,17 @@ function counter(state, action) {
                 );
             }
             break;
+        case 'UPDATE_LINK_TITLE':
+            var link = state.currentItemLinks[action.id];
+            if (link) {
+                link.item.title = action.title;
+                state.inProgress = true;
+                saveItem(link.item, function(savedItem) {
+                    store.dispatch({type: 'NOP'});
+                });
+                break;
+            }
+            break;
         case 'SET_ITEM':
             state.currentItemMode = action.mode || 'edit';
             // no break
@@ -329,105 +339,7 @@ var SaveButtons = React.createClass({
     }
 });
 
-var MyInput = React.createClass({
-    getInitialState: function() {
-        return {value: this.props.value};
-    },
-    componentWillReceiveProps: function(nextProps) {
-        this.setState({value: nextProps.value});
-    },
-    handleChange: function(e) {
-        this.props.onChange(e.target.value);
-        this.setState({value: e.target.value});
-    },
-    render: function() {
-        return <input
-            title={this.props.name}
-            className="form-control"
-            value={this.state.value}
-            onChange={this.handleChange}
-            placeholder={this.props.name} />
-    }
-});
-
-var MyWysiwyg = React.createClass({
-    componentWillReceiveProps: function(nextProps) {
-        this.alloyEditor.get('nativeEditor').setData(nextProps.value);
-    },
-    handleChange: function(e) {
-        // strange bug with previous value
-        setTimeout(() => {
-            var newValue = this.alloyEditor.get('nativeEditor').getData();
-            console.log(newValue);
-            this.props.onChange(newValue);
-        }, 0);
-    },
-    componentDidMount: function() {
-        var tableClasses = [
-            {
-                name: 'Normal Table',
-                cssClass: 'table'
-            },
-            {
-                name: 'Striped Rows',
-                cssClass: 'table table-striped'
-            },
-            {
-                name: 'Bordered Table',
-                cssClass: 'table table-bordered'
-            },
-            {
-                name: 'Hover Rows',
-                cssClass: 'table table-hover'
-            },
-            {
-                name: 'Condensed Table',
-                cssClass: 'table table-condensed'
-            }
-        ];
-
-        var tableStyles = tableClasses.map(function(styleDefinition) {
-            return {
-                name: styleDefinition.name,
-                style: {
-                    element: 'table',
-                    attributes: {
-                        'class': styleDefinition.cssClass
-                    }
-                }
-            }
-        });
-
-        var tableSelection;
-
-        for (var i = 0; i < AlloyEditor.Selections.length; i++) {
-            tableSelection = AlloyEditor.Selections[i];
-
-            if (tableSelection.name === 'table') {
-                tableSelection.buttons.unshift({
-                    name: 'styles',
-                    cfg: {
-                        styles: tableStyles
-                    }
-                });
-
-                break;
-            }
-        }
-
-        this.alloyEditor = AlloyEditor.editable('myContentEditable');
-        this.alloyEditor.get('nativeEditor').on('change', this.handleChange);
-        this.alloyEditor.get('nativeEditor').on('afterCommandExec', this.handleChange);
-    },
-    render: function() {
-        return <textarea
-            id="myContentEditable"
-            title={this.props.name}
-            className="form-control"
-            rows="18"
-            defaultValue={this.props.value} />;
-    }
-});
+import {SmTextInput, SmWysiwyg} from './components/elements'
 
 var ItemEditor = React.createClass({
     render: function() {
@@ -459,13 +371,13 @@ var ItemEditor = React.createClass({
 
         return <div className="tab-pane active row">
             <div className="form-group col-xs-6">
-                <MyInput name="title" value={title} onChange={(value) => title = value} />
+                <SmTextInput name="title" value={title} onChange={(value) => title = value} />
             </div>
             <div className="form-group col-xs-6">
-                <MyInput name="href" value={href} onChange={(value) => href = value}/>
+                <SmTextInput name="href" value={href} onChange={(value) => href = value}/>
             </div>
             <div className="form-group col-xs-12">
-                <MyWysiwyg name="text" value={text} onChange={(value) => text = value}/>
+                <SmWysiwyg name="text" value={text} onChange={(value) => text = value}/>
             </div>
             <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
