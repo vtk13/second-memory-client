@@ -106,7 +106,7 @@ var MindmapItem = React.createClass({
         var title, editBtn;
         if (this.state.readonly) {
             title = this.state.title;
-            editBtn = <span onClick={this.handleEdit} className="open-item-map glyphicon glyphicon-edit" />;
+            editBtn = <span title="Edit title" onClick={this.handleEdit} className="open-item-map glyphicon glyphicon-edit" />;
             this.state.input = null;
         } else {
             title = <form onSubmit={this.handleSubmit}>
@@ -124,11 +124,11 @@ var MindmapItem = React.createClass({
                  style={{left: link.x, top: link.y}}
             >
                 <div className="panel-heading">
-                    <span className="glyphicon glyphicon-move" />
-                    <span onClick={() => this.props.onGotoItem(link.item.id)}
+                    <span title="Move element" className="glyphicon glyphicon-move" />
+                    <span title="Go to this item's map" onClick={() => this.props.onGotoItem(link.item.id)}
                           className="open-item-map glyphicon glyphicon-eye-open" />
                     {editBtn}
-                    <span onClick={() => this.props.onUnlink(link.item.id)}
+                    <span title="Unlink from this map" onClick={() => this.props.onUnlink(link.item.id)}
                           className="glyphicon glyphicon-remove" />
                 </div>
                 <div className="panel-body">{title}</div>
