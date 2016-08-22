@@ -156,13 +156,13 @@ var ItemMap = React.createClass({
     },
     handleDoubleClick: function(e) {
         var title = prompt('Title');
-        var coords = getCoords(document.getElementById('map'));
+        var coords = document.getElementById('map').getBoundingClientRect();
         if (title !== null) {
             this.props.store.dispatch({
                 type: 'CREATE_AND_LINK_ITEM',
                 title: title,
                 x: e.clientX - coords.left,
-                y: e.clientY - coords.top - 31
+                y: e.clientY - coords.top
             });
         }
     },
