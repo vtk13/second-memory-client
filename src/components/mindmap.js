@@ -47,8 +47,8 @@ $('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}
     moveAt(e);
 
     function moveAt(e) {
-        item.style.left = (e.pageX - shiftX) + 'px';
-        item.style.top = (e.pageY - shiftY) + 'px';
+        item.style.left = ((e.pageX - shiftX) - (e.pageX - shiftX) % 5) + 'px';
+        item.style.top = ((e.pageY - shiftY) - (e.pageY - shiftY) % 5) + 'px';
     }
 
     document.onmousemove = function (e) {
