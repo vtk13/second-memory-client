@@ -402,7 +402,7 @@ var ItemEditor = React.createClass({
                 <SmTextInput name="title" value={title} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {title: value}})} />
             </div>
             <div className="form-group col-xs-6">
-                <SmTextInput name="href" value={href} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {hre: value}})}/>
+                <SmTextInput name="href" value={href} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {href: value}})}/>
             </div>
             <div className="form-group col-xs-12">
                 <SmWysiwyg name="text" value={text} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
