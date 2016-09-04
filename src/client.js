@@ -53,7 +53,8 @@ function counter(state, action) {
         canRepeat: false,
         currentItem: null,
         currentItemLinks: {},
-        currentItemMode: 'edit'
+        currentItemMode: 'edit',
+        dirty: false
     };
 
     state.inProgress = false;
@@ -61,6 +62,7 @@ function counter(state, action) {
     switch (action.type) {
         case 'INIT':
             state.inProgress = true;
+            state.dirty = false;
             var [userId, itemId] = url.info();
             if (!userId) {
                 $('body').text('Забыл userId: http://' + location.host + '/{userId}');
@@ -76,6 +78,7 @@ function counter(state, action) {
             break;
         case 'LOAD_ITEM':
             state.inProgress = true;
+            state.dirty = false;
             client.default.get_items_id({id: action.id}, function(res) {
                 if (res.status == 404) {
                     store.dispatch({type: 'RESET_ITEM'});
@@ -86,6 +89,7 @@ function counter(state, action) {
             break;
         case 'RESET_ITEM':
             state.currentItem = null;
+            state.dirty = false;
             state.currentItemLinks = [];
             url.setItemId(0);
             document.title = 'Second Memory';
@@ -98,6 +102,7 @@ function counter(state, action) {
                 text: '',
                 href: ''
             };
+            state.dirty = false;
             state.canRepeat = false;
             state.currentItemLinks = [];
             url.setItemId(0);
@@ -108,9 +113,6 @@ function counter(state, action) {
             if (action.item.type !== undefined) {
                 state.currentItem.type = action.item.type;
             }
-            state.currentItem.title = action.item.title;
-            state.currentItem.text = action.item.text;
-            state.currentItem.href = action.item.href;
             state.inProgress = true;
             saveItem(state.currentItem, function(savedItem) {
                 store.dispatch({type: 'UPDATE_ITEM', item: savedItem});
@@ -207,10 +209,19 @@ function counter(state, action) {
                 break;
             }
             break;
+        case 'CHANGE_ITEM':
+            state.dirty = true;
+            if (state.currentItem) {
+                state.currentItem.title = action.item.title || state.currentItem.title;
+                state.currentItem.text = action.item.text || state.currentItem.text;
+                state.currentItem.href = action.item.href || state.currentItem.href;
+            }
+            break;
         case 'SET_ITEM':
             state.currentItemMode = action.mode || 'edit';
             // no break
         case 'UPDATE_ITEM':
+            state.dirty = false;
             state.currentItemMode = action.mode || state.currentItemMode;
             state.canRepeat = action.canRepeat || false;
             state.currentItem = action.item || state.currentItem;
@@ -245,9 +256,6 @@ function counter(state, action) {
                     });
                 }
             );
-            break;
-        case 'SET_ITEM_MODE':
-            state.currentItemMode = action.mode;
             break;
         case 'REPEAT':
             state.inProgress = true;
@@ -352,7 +360,7 @@ var SaveButtons = React.createClass({
         var item = this.props.item;
 
         if (item.id) {
-            return <button type="button" onClick={this.props.saveItem} className="btn btn-primary">Save</button>
+            return <button type="button" disabled={!this.props.dirty} onClick={this.props.saveItem} className="btn btn-primary">Save</button>
         } else {
             return <div>
                 <button type="button" onClick={this.props.saveToLearn} className="btn btn-primary">Save to learn</button>
@@ -372,10 +380,7 @@ var ItemEditor = React.createClass({
             store.dispatch({
                 type: 'SAVE_CURRENT_ITEM',
                 item: {
-                    type: type,
-                    text: text,
-                    title: title,
-                    href: href
+                    type: type
                 }
             });
         }
@@ -394,17 +399,20 @@ var ItemEditor = React.createClass({
 
         return <div className="tab-pane active row">
             <div className="form-group col-xs-6">
-                <SmTextInput name="title" value={title} onChange={(value) => title = value} />
+                <SmTextInput name="title" value={title} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {title: value}})} />
             </div>
             <div className="form-group col-xs-6">
-                <SmTextInput name="href" value={href} onChange={(value) => href = value}/>
+                <SmTextInput name="href" value={href} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {hre: value}})}/>
             </div>
             <div className="form-group col-xs-12">
-                <SmWysiwyg name="text" value={text} onChange={(value) => text = value}/>
+                <SmWysiwyg name="text" value={text} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
             </div>
             <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
-                <SaveButtons item={this.props.item} saveItem={saveItem} saveToLearn={saveToLearn}
+                <SaveButtons item={this.props.item}
+                             dirty={this.props.dirty}
+                             saveItem={saveItem}
+                             saveToLearn={saveToLearn}
                              saveToRepeat={saveToRepeat}/>
                 <LearnedButton item={this.props.item}/>
                 <RepeatedButton item={this.props.item} />
@@ -430,7 +438,7 @@ var ItemWorkspace = React.createClass({
         $('.item-area a[href="' + tab + '"]').tab('show');
     },
     render: function() {
-        var {item, links} = this.props;
+        var {item, links, dirty} = this.props;
 
         var menu = [
             {id: 'edit', caption: 'Editor'}
@@ -460,7 +468,7 @@ var ItemWorkspace = React.createClass({
                     </ul>
                     <div className="tab-content">
                         <div role="tabpanel" className="tab-pane" id="edit">
-                            <ItemEditor item={item} />
+                            <ItemEditor item={item} dirty={dirty} />
                         </div>
                         {map}
                     </div>
@@ -478,9 +486,13 @@ var ItemWorkspace = React.createClass({
 
 store.subscribe(function() {
     var state = store.getState();
-    // подписаться нужно внутри компонента, и не вызывать ReactDOM.render каждый раз
     ReactDOM.render(
-        <ItemWorkspace item={state.currentItem} links={state.currentItemLinks} mode={state.currentItemMode} />,
+        <ItemWorkspace
+            item={state.currentItem}
+            dirty={state.dirty}
+            links={state.currentItemLinks}
+            mode={state.currentItemMode}
+        />,
         $('.current-item-container').get(0)
     );
 

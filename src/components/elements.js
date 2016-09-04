@@ -33,14 +33,26 @@ var SmWysiwyg = React.createClass({
         value: React.PropTypes.string,
         onChange: React.PropTypes.func.isRequired
     },
+    getInitialState: function() {
+        return {value: this.props.value};
+    },
     componentWillReceiveProps: function(nextProps) {
-        this.alloyEditor.get('nativeEditor').setData(nextProps.value);
+        if (this.state.value != nextProps.value) {
+            this.setState({value: nextProps.value});
+            this.alloyEditor.get('nativeEditor').setData(nextProps.value);
+        }
+    },
+    shouldComponentUpdate: function() {
+        return false;
     },
     handleChange: function(e) {
-        // strange bug with previous value
+        // strange bug: without setTimeout getData return previous data, but not actual
         setTimeout(() => {
             var newValue = this.alloyEditor.get('nativeEditor').getData();
-            this.props.onChange(newValue);
+            if (newValue != this.state.value) {
+                this.state.value = newValue;
+                this.props.onChange(newValue);
+            }
         }, 0);
     },
     componentDidMount: function() {
@@ -106,7 +118,7 @@ var SmWysiwyg = React.createClass({
             title={this.props.name}
             className="form-control"
             rows="18"
-            defaultValue={this.props.value} />;
+            defaultValue={this.state.value} />;
     }
 });
 
