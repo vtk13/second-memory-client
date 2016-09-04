@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import $ from 'jquery'
 import {SmTextInput} from './elements'
+import vis from 'vis'
 
 function mapFields(obj, callback)
 {
@@ -185,4 +186,45 @@ var ItemMap = React.createClass({
     }
 });
 
-export {ItemMap}
+var ItemGraph = React.createClass({
+    componentDidUpdate: function() {
+        var {item, links} = this.props;
+
+        var nodes = new vis.DataSet([{id: item.id, label: item.title}]);
+        var edges = new vis.DataSet([]);
+
+        for (var i in links) {
+            nodes.add({id: links[i].item.id, label: links[i].item.title});
+            var from = Math.min(item.id, links[i].item.id), to = Math.max(item.id, links[i].item.id);
+            edges.add({id: from + ':' + to, from, to});
+        }
+
+        var network = new vis.Network(document.getElementById('mynetwork'), {nodes, edges}, {});
+        // hack hack
+        window.network = network;
+        network.on('click', function (params) {
+            if (params.nodes.length > 0) {
+                var id = params.nodes[0];
+
+                window.client.default.get_items_id_links(
+                    {id},
+                    function(res) {
+                        res.obj.map(function(link) {
+                            client.default.get_items_id({id: link.right}, function (res) {
+                                var item = res.obj;
+                                nodes.update({id: item.id, label: item.title});
+                                var from = Math.min(id, item.id), to = Math.max(id, item.id);
+                                edges.update({id: from + ':' + to, from, to});
+                            });
+                        });
+                    }
+                );
+            }
+        });
+    },
+    render: function() {
+        return <div id="mynetwork" style={{width: '100%', height: 500, border: 'solid 1px gray'}}></div>
+    }
+});
+
+export {ItemMap, ItemGraph}

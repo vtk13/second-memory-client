@@ -14,7 +14,8 @@
     "react": "^0.14.7",
     "react-dom": "^0.14.7",
     "redux": "^3.3.1",
-    "swagger-client": "^2.1.13"
+    "swagger-client": "^2.1.13",
+    "vis": "^4.16.1"
   },
   "devDependencies": {
     "babel-core": "^6.4.5",

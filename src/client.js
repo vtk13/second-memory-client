@@ -421,7 +421,7 @@ var ItemEditor = React.createClass({
     }
 });
 
-import {ItemMap} from './components/mindmap'
+import {ItemMap, ItemGraph} from './components/mindmap'
 
 function ItemHyperLink({item})
 {
@@ -436,6 +436,12 @@ var ItemWorkspace = React.createClass({
     componentDidUpdate: function() {
         var tab = location.hash || '#edit';
         $('.item-area a[href="' + tab + '"]').tab('show');
+        $('a[href="#graph"]').on('click', function() {
+            if (!window.network._fitted) {
+                setTimeout(() => window.network.fit(), 0);
+                window.network._fitted = true;
+            }
+        });
     },
     render: function() {
         var {item, links, dirty} = this.props;
@@ -443,12 +449,19 @@ var ItemWorkspace = React.createClass({
         var menu = [
             {id: 'edit', caption: 'Editor'}
         ];
-        var map = '';
+        var map = '', graph;
         if (item && item.id) {
             menu.push({id: 'map', caption: 'Map'});
             map = (
                 <div role="tabpanel" className="tab-pane" id="map">
                     <ItemMap store={store} item={item} links={links} />
+                </div>
+            );
+
+            menu.push({id: 'graph', caption: 'Graph'});
+            graph = (
+                <div role="tabpanel" className="tab-pane" id="graph">
+                    <ItemGraph item={item} links={links} />
                 </div>
             );
         }
@@ -471,6 +484,7 @@ var ItemWorkspace = React.createClass({
                             <ItemEditor item={item} dirty={dirty} />
                         </div>
                         {map}
+                        {graph}
                     </div>
                 </div>
             );
