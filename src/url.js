@@ -18,10 +18,10 @@ function getItemUrl(itemId)
     return '/' + userId + (itemId ? '/' + itemId : '');
 }
 
-function setItemId(itemId)
+function setItemId(itemId, hash)
 {
     var [userId, oldItemId] = info();
     if (oldItemId != itemId) {
-        window.history.pushState({}, '', getItemUrl(itemId));
+        window.history.pushState({}, '', getItemUrl(itemId) + (hash ? '#' + hash : ''));
     }
 }

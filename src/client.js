@@ -214,7 +214,7 @@ function counter(state, action) {
             state.canRepeat = action.canRepeat || false;
             state.currentItem = action.item || state.currentItem;
             state.currentItemLinks = [];
-            url.setItemId(state.currentItem.id);
+            url.setItemId(state.currentItem.id, state.currentItemMode);
             document.title = state.currentItem.title;
 
             // load links
@@ -435,34 +435,47 @@ var CurrentItemState = React.createClass({
 });
 
 var ItemWorkspace = React.createClass({
+    componentDidUpdate: function() {
+        var tab = location.hash || '#editor';
+        $('.item-area a[href="' + tab + '"]').tab('show');
+    },
     render: function() {
-        var {item, links, mode} = this.props;
-
-        function onEdit() {
-            store.dispatch({type: 'SET_ITEM_MODE', mode: 'edit'});
-        }
-        function onMap() {
-            store.dispatch({type: 'SET_ITEM_MODE', mode: 'map'});
-        }
+        var {item, links} = this.props;
 
         var menu = [
-            {id: 'editor', caption: 'Editor', onClick: onEdit, active: mode == 'edit'}
+            {id: 'editor', caption: 'Editor'}
         ];
+        var map = '';
         if (item && item.id) {
-            menu.push({id: 'map', caption: 'Map', onClick: onMap, active: mode == 'map'});
+            menu.push({id: 'map', caption: 'Map'});
+            map = (
+                <div role="tabpanel" className="tab-pane" id="map">
+                    <ItemMap store={store} item={item} links={links} />
+                </div>
+            );
         }
 
         if (item) {
-            return <div>
-                <ul className="nav nav-tabs current-item-container-tabs">
-                    {menu.map(function(menuItem) {
-                        var className = menuItem.active ? 'active' : '';
-                        return <li key={menuItem.id} className={className}><a href="#" onClick={menuItem.onClick}>{menuItem.caption}</a></li>
-                    })}
-                    <ItemHyperLink item={item} />
-                </ul>
-                <CurrentItemState mode={mode} item={item} links={links} />
-            </div>
+            return (
+                <div className="item-area">
+                    <ul className="nav nav-tabs current-item-container-tabs" role="tablist">
+                        {menu.map(function(menuItem) {
+                            return (
+                                <li key={menuItem.id} role="presentation">
+                                    <a href={'#' + menuItem.id} role="tab" data-toggle="tab">{menuItem.caption}</a>
+                                </li>
+                            );
+                        })}
+                        <ItemHyperLink item={item} />
+                    </ul>
+                    <div className="tab-content">
+                        <div role="tabpanel" className="tab-pane" id="editor">
+                            <ItemEditor item={item} />
+                        </div>
+                        {map}
+                    </div>
+                </div>
+            );
         } else {
             return <p>No current item selected</p>;
         }
