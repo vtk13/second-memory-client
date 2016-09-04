@@ -423,27 +423,16 @@ function ItemHyperLink({item})
     }
 }
 
-var CurrentItemState = React.createClass({
-    render: function() {
-        switch (this.props.mode) {
-            case 'edit':
-                return <ItemEditor item={this.props.item} />;
-            case 'map':
-                return <ItemMap store={store} item={this.props.item} links={this.props.links} />;
-        }
-    }
-});
-
 var ItemWorkspace = React.createClass({
     componentDidUpdate: function() {
-        var tab = location.hash || '#editor';
+        var tab = location.hash || '#edit';
         $('.item-area a[href="' + tab + '"]').tab('show');
     },
     render: function() {
         var {item, links} = this.props;
 
         var menu = [
-            {id: 'editor', caption: 'Editor'}
+            {id: 'edit', caption: 'Editor'}
         ];
         var map = '';
         if (item && item.id) {
@@ -469,7 +458,7 @@ var ItemWorkspace = React.createClass({
                         <ItemHyperLink item={item} />
                     </ul>
                     <div className="tab-content">
-                        <div role="tabpanel" className="tab-pane" id="editor">
+                        <div role="tabpanel" className="tab-pane" id="edit">
                             <ItemEditor item={item} />
                         </div>
                         {map}
