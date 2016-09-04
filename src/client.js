@@ -98,6 +98,7 @@ function counter(state, action) {
                 text: '',
                 href: ''
             };
+            state.canRepeat = false;
             state.currentItemLinks = [];
             url.setItemId(0);
             document.title = 'Create Item - Second Memory';
