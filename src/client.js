@@ -212,9 +212,9 @@ function counter(state, action) {
         case 'CHANGE_ITEM':
             state.dirty = true;
             if (state.currentItem) {
-                state.currentItem.title = action.item.title || state.currentItem.title;
-                state.currentItem.text = action.item.text || state.currentItem.text;
-                state.currentItem.href = action.item.href || state.currentItem.href;
+                state.currentItem.title = action.item.hasOwnProperty('title') ? action.item.title : state.currentItem.title;
+                state.currentItem.text = action.item.hasOwnProperty('text') ? action.item.text : state.currentItem.text;
+                state.currentItem.href = action.item.hasOwnProperty('href') ? action.item.href : state.currentItem.href;
             }
             break;
         case 'SET_ITEM':
