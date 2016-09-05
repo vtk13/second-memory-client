@@ -433,14 +433,16 @@ function ItemHyperLink({item})
 }
 
 var ItemWorkspace = React.createClass({
+    componentDidMount: function() {
+        $('.item-area').on('click', 'a[data-toggle]', function() {
+            window.location.hash = $(this).attr('href');
+        });
+    },
     componentDidUpdate: function() {
         var tab = location.hash || '#edit';
         $('.item-area a[href="' + tab + '"]').tab('show');
-        $('a[href="#graph"]').on('click', function() {
-            if (!window.network._fitted) {
-                setTimeout(() => window.network.fit(), 0);
-                window.network._fitted = true;
-            }
+        $('a[href="#graph"]').one('click', function() {
+            setTimeout(() => window.network.fit(), 0);
         });
     },
     render: function() {
@@ -489,7 +491,7 @@ var ItemWorkspace = React.createClass({
                 </div>
             );
         } else {
-            return <p>No current item selected</p>;
+            return <div className="item-area"><p>No current item selected</p></div>;
         }
     }
 });
