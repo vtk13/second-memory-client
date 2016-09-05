@@ -194,7 +194,7 @@ var ItemGraph = React.createClass({
         var edges = new vis.DataSet([]);
 
         for (var i in links) {
-            nodes.add({id: links[i].item.id, label: links[i].item.title});
+            nodes.add({id: links[i].item.id, label: links[i].item.title, shape: 'box'});
             var from = Math.min(item.id, links[i].item.id), to = Math.max(item.id, links[i].item.id);
             edges.add({id: from + ':' + to, from, to});
         }
@@ -212,7 +212,7 @@ var ItemGraph = React.createClass({
                         res.obj.map(function(link) {
                             client.default.get_items_id({id: link.right}, function (res) {
                                 var item = res.obj;
-                                nodes.update({id: item.id, label: item.title});
+                                nodes.update({id: item.id, label: item.title, shape: 'box'});
                                 var from = Math.min(id, item.id), to = Math.max(id, item.id);
                                 edges.update({id: from + ':' + to, from, to});
                             });
