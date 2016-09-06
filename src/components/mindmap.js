@@ -37,6 +37,23 @@ function getCoords(elem) {
     };
 }
 
+function wordwrap(str, int_width, str_break, cut) {
+    // Wraps a string to a given number of characters
+    //
+    // +   original by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
+    // +   improved by: Nick Callen
+
+    var i, j, s, r = str.split("\n");
+    if(int_width > 0) for(i in r){
+        for(s = r[i], r[i] = ""; s.length > int_width;
+            j = cut ? int_width : (j = s.substr(0, int_width).match(/\S*$/)).input.length - j[0].length || int_width,
+                r[i] += s.substr(0, j) + ((s = s.substr(j)).length ? str_break : "")
+        );
+        r[i] += s;
+    }
+    return r.join("\n");
+}
+
 $('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}) {
     var item = $(this).parents('.item').addClass('dragging').get(0);
     var e = originalEvent;
@@ -190,16 +207,31 @@ var ItemGraph = React.createClass({
     componentDidUpdate: function() {
         var {item, links} = this.props;
 
-        var nodes = new vis.DataSet([{id: item.id, label: item.title}]);
+        var nodes = new vis.DataSet([{id: item.id, label: wordwrap(item.title, 25, '\n'), shape: 'box'}]);
         var edges = new vis.DataSet([]);
 
         for (var i in links) {
-            nodes.add({id: links[i].item.id, label: links[i].item.title, shape: 'box'});
+            nodes.add({id: links[i].item.id, label: wordwrap(links[i].item.title, 25, '\n'), shape: 'box'});
             var from = Math.min(item.id, links[i].item.id), to = Math.max(item.id, links[i].item.id);
             edges.add({id: from + ':' + to, from, to});
         }
 
-        var network = new vis.Network(document.getElementById('mynetwork'), {nodes, edges}, {});
+        var network = new vis.Network(
+            document.getElementById('mynetwork'),
+            {nodes, edges},
+            {
+                layout: {
+                    hierarchical: {
+                        direction: 'LR',
+                        sortMethod: 'directed',
+                        levelSeparation: 200
+                    }
+                },
+                physics: {
+                    enabled: false
+                }
+            }
+        );
         // hack hack
         window.network = network;
         network.on('click', function (params) {
@@ -212,7 +244,7 @@ var ItemGraph = React.createClass({
                         res.obj.map(function(link) {
                             client.default.get_items_id({id: link.right}, function (res) {
                                 var item = res.obj;
-                                nodes.update({id: item.id, label: item.title, shape: 'box'});
+                                nodes.update({id: item.id, label: wordwrap(item.title, 25, '\n'), shape: 'box'});
                                 var from = Math.min(id, item.id), to = Math.max(id, item.id);
                                 edges.update({id: from + ':' + to, from, to});
                             });
