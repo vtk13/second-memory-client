@@ -119,7 +119,7 @@ var MindmapItem = React.createClass({
     },
     render: function() {
         var {link} = this.props;
-        var className = 'item item' + link.item.id + ' panel panel-default';
+        var className = 'item item' + link.item.id + ' item-type' + link.item.type + ' panel panel-default';
 
         var title, editBtn;
         if (this.state.readonly) {

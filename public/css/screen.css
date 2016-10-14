@@ -92,3 +92,20 @@ pre {
     border-radius: 4px;
     padding: 6px 12px;
 }
+
+.item-type0 {
+    border: solid 1px green;
+    background-color: #dfd;
+}
+.item-type1 {
+    border: solid 1px red;
+    background-color: #fdd;
+}
+
+.item.panel-default>.panel-heading {
+    background-color: black;
+    color: #9d9d9d;
+}
+.item.panel-default>.panel-heading .glyphicon:hover {
+    color: white;
+}
