@@ -104,6 +104,20 @@ paths:
       responses:
         200:
           description: Successfully unlinked
+  /items/{id}/backlinks:
+    get:
+      summary: List backlinks
+      parameters:
+        - $ref: "#/parameters/itemId"
+      responses:
+        200:
+          description: Links to the item
+          schema:
+            type: array
+            items:
+              - $ref: "#/definitions/Link"
+        404:
+          description: Not found
   /items/next-to-repeat:
     get:
       summary: Get next item to repeat

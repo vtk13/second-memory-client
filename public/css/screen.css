@@ -109,5 +109,13 @@ pre {
 .item.panel-default>.panel-heading .glyphicon:hover {
     color: white;
 }
-smlink { background: #00ff26; cursor: pointer; }
+smlink {
+    background: #00ff26;
+    cursor: pointer;
+    text-decoration: underline;
+}
 .smlink-editor .dropdown-menu>li>a { color: #333; }
+.smlink-editor .dropdown-menu {
+    max-height: 300px;
+    overflow-y: scroll;
+}

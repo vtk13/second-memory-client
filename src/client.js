@@ -4,6 +4,7 @@ import bootstap from 'bootstrap';
 import { createStore } from 'redux';
 import React from 'react';
 import ReactDOM from 'react-dom';
+import _ from 'lodash';
 
 import url from './url';
 
@@ -53,6 +54,7 @@ function counter(state, action) {
         canRepeat: false,
         currentItem: null,
         currentItemLinks: {},
+        currentItemBacklinks: {},
         currentItemMode: 'edit',
         dirty: false
     };
@@ -91,6 +93,7 @@ function counter(state, action) {
             state.currentItem = null;
             state.dirty = false;
             state.currentItemLinks = [];
+            state.currentItemBacklinks = [];
             url.setItemId(0);
             document.title = 'Second Memory';
             break;
@@ -105,6 +108,7 @@ function counter(state, action) {
             state.dirty = false;
             state.canRepeat = false;
             state.currentItemLinks = [];
+            state.currentItemBacklinks = [];
             url.setItemId(0);
             document.title = 'Create Item - Second Memory';
             state.currentItemMode = 'edit';
@@ -126,6 +130,9 @@ function counter(state, action) {
             break;
         case 'SET_ITEM_LINKS':
             state.currentItemLinks = action.links;
+            break;
+        case 'SET_ITEM_BACKLINKS':
+            state.currentItemBacklinks = action.backlinks;
             break;
         case 'CREATE_AND_LINK_ITEM':
             var newItem = {
@@ -226,6 +233,7 @@ function counter(state, action) {
             state.canRepeat = action.canRepeat || false;
             state.currentItem = action.item || state.currentItem;
             state.currentItemLinks = [];
+            state.currentItemBacklinks = [];
             url.setItemId(state.currentItem.id, state.currentItemMode);
             document.title = state.currentItem.title;
 
@@ -251,6 +259,31 @@ function counter(state, action) {
 
                             if (n == countFields(links)) {
                                 store.dispatch({type: 'SET_ITEM_LINKS', links: links});
+                            }
+                        });
+                    });
+                }
+            );
+            client.default.get_items_id_backlinks(
+                {id: state.currentItem.id},
+                function(res) {
+                    if (res.obj.length == 0) {
+                        store.dispatch({type: 'SET_ITEM_BACKLINKS', backlinks: res.obj});
+                    }
+
+                    var n = 0;
+                    var backlinks = {};
+                    res.obj.map(function(link) {
+                        backlinks[link.id] = link;
+                    });
+                    res.obj.map(function(link) {
+                        client.default.get_items_id({id: link.id}, function(res) {
+                            n++;
+                            var item = res.obj;
+                            backlinks[item.id].item = item;
+
+                            if (n == countFields(backlinks)) {
+                                store.dispatch({type: 'SET_ITEM_BACKLINKS', backlinks: backlinks});
                             }
                         });
                     });
@@ -408,6 +441,13 @@ var ItemEditor = React.createClass({
                 <SmWysiwyg name="text" value={text} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
             </div>
             <div className="form-group col-xs-12">
+                {_.values(this.props.backlinks).map(backlink=>
+                    <button key={backlink.id} onClick={()=>store.dispatch({type: 'LOAD_ITEM', id: backlink.id})}>
+                        {backlink.item.title}
+                    </button>
+                )}
+            </div>
+            <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
                 <SaveButtons item={this.props.item}
                              dirty={this.props.dirty}
@@ -446,7 +486,7 @@ var ItemWorkspace = React.createClass({
         });
     },
     render: function() {
-        var {item, links, dirty} = this.props;
+        var {item, links, backlinks, dirty} = this.props;
 
         var menu = [
             {id: 'edit', caption: 'Editor'}
@@ -483,7 +523,7 @@ var ItemWorkspace = React.createClass({
                     </ul>
                     <div className="tab-content">
                         <div role="tabpanel" className="tab-pane" id="edit">
-                            <ItemEditor item={item} dirty={dirty} />
+                            <ItemEditor item={item} dirty={dirty} backlinks={backlinks} />
                         </div>
                         {map}
                         {graph}
@@ -507,6 +547,7 @@ store.subscribe(function() {
             item={state.currentItem}
             dirty={state.dirty}
             links={state.currentItemLinks}
+            backlinks={state.currentItemBacklinks}
             mode={state.currentItemMode}
         />,
         $('.current-item-container').get(0)

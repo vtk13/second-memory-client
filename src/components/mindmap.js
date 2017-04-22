@@ -190,14 +190,13 @@ var ItemMap = React.createClass({
         }
 
         return <div className="tab-pane active" id="map" onDoubleClick={this.handleDoubleClick}>
-            {mapFields(
-                this.props.links,
-                (link) => <MindmapItem
-                        onSubmit={this.handleSubmit}
-                        key={link.item.id}
-                        link={link}
-                        onGotoItem={this.gotoItem}
-                        onUnlink={this.unlink} />
+            {_.values(this.props.links).filter(link=>link.type_id==0).map(link =>
+                <MindmapItem
+                    onSubmit={this.handleSubmit}
+                    key={link.item.id}
+                    link={link}
+                    onGotoItem={this.gotoItem}
+                    onUnlink={this.unlink} />
             )}
         </div>;
     }

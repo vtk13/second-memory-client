@@ -111,7 +111,7 @@ var SmWysiwyg = React.createClass({
 
         var toolbars = {
             add: {
-                buttons: ['image', 'embed', 'camera', 'hline', 'table'],
+                buttons: ['image', 'embed', 'camera', 'hline', 'table', AlloyEditor.ButtonSmLink.key],
                 tabIndex: 2
             },
             styles: {
@@ -129,6 +129,7 @@ var SmWysiwyg = React.createClass({
         this.alloyEditor = AlloyEditor.editable('myContentEditable', {toolbars});
         this.alloyEditor.get('nativeEditor').on('change', this.handleChange);
         this.alloyEditor.get('nativeEditor').on('afterCommandExec', this.handleChange);
+        this.alloyEditor.get('nativeEditor').on('actionPerformed', this.handleChange);
     },
     render: function() {
         return <textarea
