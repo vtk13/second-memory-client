@@ -17,7 +17,8 @@ module.exports = {
                 test: path.join(__dirname, 'src'),
                 loader: 'babel', // 'babel-loader' is also a legal name to reference
                 query: {
-                    presets: ['react', 'es2015']
+                    presets: ['react', 'es2015'],
+                    plugins: ['transform-class-properties']
                 }
             },
             { test: /jquery\.js$/, loader: 'expose?$' },

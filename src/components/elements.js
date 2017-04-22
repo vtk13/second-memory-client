@@ -1,5 +1,6 @@
 import React from 'react'
 import AlloyEditor from 'alloyeditor';
+import plugins from './alloy';
 
 var SmTextInput = React.createClass({
     propTypes: {
@@ -91,24 +92,41 @@ var SmWysiwyg = React.createClass({
             }
         });
 
-        var tableSelection;
+        for (let i = 0; i < AlloyEditor.Selections.length; i++) {
+            let selection = AlloyEditor.Selections[i];
 
-        for (var i = 0; i < AlloyEditor.Selections.length; i++) {
-            tableSelection = AlloyEditor.Selections[i];
-
-            if (tableSelection.name === 'table') {
-                tableSelection.buttons.unshift({
+            if (selection.name === 'table') {
+                selection.buttons.unshift({
                     name: 'styles',
                     cfg: {
                         styles: tableStyles
                     }
                 });
+            }
 
-                break;
+            if (selection.name === 'text') {
+                selection.buttons.push(AlloyEditor.ButtonSmLink.key);
             }
         }
 
-        this.alloyEditor = AlloyEditor.editable('myContentEditable');
+        var toolbars = {
+            add: {
+                buttons: ['image', 'embed', 'camera', 'hline', 'table'],
+                tabIndex: 2
+            },
+            styles: {
+                selections: AlloyEditor.Selections,
+                tabIndex: 1
+            }
+        };
+
+        toolbars.styles.selections.unshift({
+            name: 'smlink',
+            buttons: [AlloyEditor.ButtonSmSearch.key],
+            test: AlloyEditor.SelectionTest.smlink
+        });
+
+        this.alloyEditor = AlloyEditor.editable('myContentEditable', {toolbars});
         this.alloyEditor.get('nativeEditor').on('change', this.handleChange);
         this.alloyEditor.get('nativeEditor').on('afterCommandExec', this.handleChange);
     },

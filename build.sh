@@ -9,6 +9,4 @@ cp -Rf node_modules/bootstrap/dist/ public/css/bootstrap
 cp -Rf node_modules/vis/dist/ public/css/vis
 cp -Rf node_modules/alloyeditor/dist/alloy-editor public/css/alloy-editor
 
-echo "You can run:"
-echo "( cd public && php -S localhost:8082 )"
-echo "node_modules/webpack/bin/webpack.js -w"
+echo "You can run: npm run dev"
