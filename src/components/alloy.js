@@ -97,6 +97,14 @@ var ButtonSmSearch = React.createClass({
         this.search(e.target.value);
     },
 
+    createNew: function(title) {
+        window.store.dispatch({
+            type: 'CREATE_ITEM',
+            title,
+            callback: item=>this.applyLink(item.id, item.title)
+        });
+    },
+
     render: function() {
         var cssClass = 'dropdown open smlink-editor ' + this.getStateClasses();
 
@@ -112,14 +120,21 @@ var ButtonSmSearch = React.createClass({
                 <button onClick={()=>this.applyLink()}>Unlink</button>
             </div>;
         } else {
+            var input;
             return (
                 <div className={cssClass} tabIndex={this.props.tabIndex}>
                     <div>
                         <input type="text" name="search" placeholder="type to search"
-                               defaultValue={this.state.search} onChange={this.onType} />
+                           ref={e=>input=e}
+                           defaultValue={this.state.search} onChange={this.onType} />
                     </div>
                     <ul className="dropdown-menu">
-                        <li><a href="#">Создать новую запись</a></li>
+                        <li>
+                            <button
+                                onClick={()=>this.createNew(input.value)}>
+                                Создать новую запись
+                            </button>
+                        </li>
                         {results}
                     </ul>
                 </div>
