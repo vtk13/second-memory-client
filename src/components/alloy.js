@@ -60,7 +60,7 @@ var ButtonSmSearch = React.createClass({
 
             let style = new CKEDITOR.style({
                 element: 'span',
-                attributes: {'class': 'smlink', 'data-id': id||this.state.id, contentEditable: false},
+                attributes: {'class': 'smlink', 'data-sm-id': id||this.state.id, contentEditable: false},
             });
             if (this.isActive(style)) {
                 editor.removeStyle(style);
