@@ -62,11 +62,12 @@ var ButtonSmSearch = React.createClass({
                 element: 'span',
                 attributes: {'class': 'smlink', 'data-sm-id': id||this.state.id, contentEditable: false},
             });
+            let element = this.getElement();
             if (this.isActive(style)) {
+                $(element).removeAttr('contentEditable');
                 editor.removeStyle(style);
             } else {
                 editor.applyStyle(style);
-                let element = this.getElement();
                 if (element && _.isString(title)) {
                     element.innerText = title;
                     var range = new CKEDITOR.dom.range(editor.document);
