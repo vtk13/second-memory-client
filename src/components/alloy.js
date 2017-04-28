@@ -44,7 +44,7 @@ var ButtonSmSearch = React.createClass({
     componentWillMount: function() {
         let selection = this.props.editor.get('nativeEditor').getSelection();
         let search = selection.getSelectedText();
-        this.setState({id: $(this.getElement()).data('id')||0, search, loading: true, results: []});
+        this.setState({id: $(this.getElement()).data('sm-id')||0, search, loading: true, results: []});
         this.search(search);
     },
 
