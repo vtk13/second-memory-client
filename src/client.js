@@ -62,9 +62,6 @@ function counter(state, action) {
     state.inProgress = false;
 
     switch (action.type) {
-        case 'DONE':
-            state.inProgress = false;
-            break;
         case 'INIT':
             state.inProgress = true;
             state.dirty = false;
@@ -147,7 +144,7 @@ function counter(state, action) {
             };
             saveItem(newItem, function(savedItem){
                 action.callback&&action.callback(savedItem);
-                store.dispatch({type: 'DONE'});
+                store.dispatch({type: 'NOP'});
             });
             break;
         case 'CREATE_AND_LINK_ITEM':
@@ -172,6 +169,7 @@ function counter(state, action) {
             if (!state.currentItemLinks[action.item.id]) {
                 state.currentItemLinks[action.item.id] = {
                     item: action.item,
+                    type_id: 0,
                     x: action.x || 0,
                     y: action.y || 0
                 };
