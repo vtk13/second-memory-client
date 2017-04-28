@@ -60,19 +60,20 @@ var ButtonSmSearch = React.createClass({
 
             let style = new CKEDITOR.style({
                 element: 'span',
-                attributes: {'class': 'smlink', 'data-sm-id': id||this.state.id, contentEditable: false},
+                attributes: {'class': 'smlink', 'data-sm-id': id||this.state.id},
             });
-            let element = this.getElement();
             if (this.isActive(style)) {
-                $(element).removeAttr('contentEditable');
+                $(this.getElement()).removeAttr('contentEditable');
                 editor.removeStyle(style);
             } else {
                 editor.applyStyle(style);
+                let element = this.getElement();
                 if (element && _.isString(title)) {
                     element.innerText = title;
                     var range = new CKEDITOR.dom.range(editor.document);
                     range.selectNodeContents(new CKEDITOR.dom.element(element));
                     editor.getSelection().selectRanges([range]);
+                    setTimeout(()=>$(element).attr('contentEditable', 'false'), 10);
                 }
             }
 
