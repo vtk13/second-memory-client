@@ -10,7 +10,7 @@ var smLinkSelectionTest = function(payload) {
     var nativeEditor = payload.editor.get('nativeEditor');
     var element = nativeEditor.getSelection().getCommonAncestor().$;
     while (element != document.body) {
-        if (element.nodeName == 'SMLINK')
+        if ($(element).hasClass('smlink'))
             return true;
         element = element.parentNode;
     }
@@ -34,7 +34,7 @@ var ButtonSmSearch = React.createClass({
         let selection = this.props.editor.get('nativeEditor').getSelection();
         var element = selection.getCommonAncestor().$;
         while (element != document.body) {
-            if (element.nodeName == 'SMLINK')
+            if ($(element).hasClass('smlink'))
                 return element;
             element = element.parentNode;
         }
@@ -59,8 +59,8 @@ var ButtonSmSearch = React.createClass({
             editor.getSelection().lock();
 
             let style = new CKEDITOR.style({
-                element: 'smlink',
-                attributes: {'data-id': id||this.state.id},
+                element: 'span',
+                attributes: {'class': 'smlink', 'data-id': id||this.state.id, contentEditable: false},
             });
             if (this.isActive(style)) {
                 editor.removeStyle(style);
