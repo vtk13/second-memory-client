@@ -150,6 +150,16 @@ paths:
             $ref: "#/definitions/Item"
         204:
           description: No item to learn
+  /items/inactive:
+    get:
+      summary: Get random item with type=2
+      responses:
+        200:
+          description: Item
+          schema:
+            $ref: "#/definitions/Item"
+        204:
+          description: No item to learn
   /items/search/{search}:
     get:
       summary: Text search through items content and href fields
@@ -162,6 +172,12 @@ paths:
             type: array
             items:
               $ref: "#/definitions/Item"
+  /items/stats:
+    get:
+      summary: Get stats
+      responses:
+        200:
+          description: stats
 parameters:
   itemId:
     name: id
@@ -171,7 +187,7 @@ parameters:
   itemType:
     name: type
     in: formData
-    description: 'Type of item, 0 - primary, 1 - to learn'
+    description: 'Type of item, 0 - to repeat, 1 - to learn, 2 - inactive'
     type: integer
   itemTitle:
     name: title

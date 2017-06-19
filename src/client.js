@@ -77,6 +77,9 @@ function counter(state, action) {
                     }
                 });
             }
+            client.default.get_items_stats({}, function(res){
+                console.log(res.obj);
+            });
             break;
         case 'LOAD_ITEM':
             state.inProgress = true;
@@ -330,9 +333,19 @@ function counter(state, action) {
                 }
             });
             break;
-        case 'TOGGLE_LEARNED':
+        case 'INACTIVE':
             state.inProgress = true;
-            state.currentItem.type = state.currentItem.type == 1 ? 0 : 1;
+            client.default.get_items_inactive({}, function(res) {
+                if (res.status == 204) {
+                    store.dispatch({type: 'RESET_ITEM'});
+                } else {
+                    store.dispatch({type: 'SET_ITEM', item: res.obj});
+                }
+            });
+            break;
+        case 'SET_TYPE':
+            state.inProgress = true;
+            state.currentItem.type = action.item_type;
             saveItem(state.currentItem, function(savedItem) {
                 store.dispatch({type: 'NOP'});
             });
@@ -363,23 +376,12 @@ var RepeatedButton = React.createClass({
     }
 });
 
-var LearnedButton = React.createClass({
+var SetTypeButton = React.createClass({
+    setType: function() {
+        store.dispatch({type: 'SET_TYPE', item_type: this.props.type});
+    },
     render: function() {
-        var item = this.props.item;
-
-        function onClick() {
-            store.dispatch({type: 'TOGGLE_LEARNED'});
-        }
-
-        if (!item.id) {
-            return false;
-        }
-
-        if (item.type == 0) {
-            return <button type="button" className="btn btn-to-learn btn-primary" onClick={onClick}>Set On Learn</button>;
-        } else {
-            return <button type="button" className="btn btn-to-repeat btn-primary" onClick={onClick}>Set On Repeat</button>;
-        }
+        return <button type="button" className="btn btn-primary" onClick={this.setType}>{this.props.title}</button>;
     }
 });
 
@@ -422,6 +424,7 @@ import {SmTextInput, SmWysiwyg} from './components/elements'
 var ItemEditor = React.createClass({
     render: function() {
         var {title, href, text} = this.props.item;
+        var item = this.props.item;
 
         function saveItemWithType(type) {
             store.dispatch({
@@ -432,16 +435,25 @@ var ItemEditor = React.createClass({
             });
         }
 
-        function saveItem() {
-            saveItemWithType();
-        }
+        function saveItem() { saveItemWithType(); }
+        function saveToLearn() { saveItemWithType(1); }
+        function saveToRepeat() { saveItemWithType(0); }
 
-        function saveToLearn() {
-            saveItemWithType(1);
-        }
-
-        function saveToRepeat() {
-            saveItemWithType(0);
+        var setTypeButtons = [];
+        if (item.id) {
+            var buttons = [
+                {type: 0, title: 'Set On Learn'},
+                {type: 1, title: 'Set On Repeat'},
+                {type: 2, title: 'Set Inactive'},
+            ];
+            setTypeButtons = buttons.reduce(
+                (acc, button)=> {
+                    if (button.type != item.type)
+                        acc.push(<SetTypeButton key={button.type} type={button.type} title={button.title} />);
+                    return acc;
+                },
+                []
+            );
         }
 
         return <div className="tab-pane active row">
@@ -468,7 +480,7 @@ var ItemEditor = React.createClass({
                              saveItem={saveItem}
                              saveToLearn={saveToLearn}
                              saveToRepeat={saveToRepeat}/>
-                <LearnedButton item={this.props.item}/>
+                {setTypeButtons}
                 <RepeatedButton item={this.props.item} />
             </div>
         </div>;
@@ -607,6 +619,11 @@ $('.main-menu-repeat').click(function() {
 
 $('.main-menu-learn').click(function() {
     store.dispatch({type: 'LEARN'});
+    return false;
+});
+
+$('.main-menu-inactive').click(function() {
+    store.dispatch({type: 'INACTIVE'});
     return false;
 });
 

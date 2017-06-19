@@ -52,7 +52,7 @@ body {
     text-align: center;
 }
 
-.btn-primary + .btn-primary, .btn-to-learn, .btn-to-repeat {
+.btn-primary + .btn-primary {
     margin-left: 10px;
 }
 
