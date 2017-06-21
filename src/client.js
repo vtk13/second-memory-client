@@ -442,8 +442,8 @@ var ItemEditor = React.createClass({
         var setTypeButtons = [];
         if (item.id) {
             var buttons = [
-                {type: 0, title: 'Set On Learn'},
-                {type: 1, title: 'Set On Repeat'},
+                {type: 0, title: 'Set On Repeat'},
+                {type: 1, title: 'Set On Learn'},
                 {type: 2, title: 'Set Inactive'},
             ];
             setTypeButtons = buttons.reduce(
