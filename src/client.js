@@ -8,6 +8,23 @@ import _ from 'lodash';
 
 import url from './url';
 
+// swagger 3 incomplete code
+// var settings = {};
+// if (USE_BASIC) {
+//     settings.authorizations = {
+//         my_basic_auth: {username: BASIC_SERVER_USER, password: BASIC_SERVER_PASSWORD}
+//     };
+// }
+//
+// var client;
+// Swagger('/swagger-api.yml', settings).then(function(swaggerClient){
+//     client = window.client = swaggerClient;
+//     client.http.withCredentials = true;
+//     client.spec.host = API_HOST;
+//     store.dispatch({type: 'INIT'});
+// });
+
+
 var settings = {
     url: '/swagger-api.yml',
     success: function() {
@@ -24,7 +41,6 @@ if (USE_BASIC) {
 }
 
 window.client = new Swagger(settings);
-//*/
 
 function countFields(obj)
 {

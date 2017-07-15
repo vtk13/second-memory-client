@@ -47,6 +47,12 @@ var SmWysiwyg = React.createClass({
         return false;
     },
     handleChange: function(e) {
+        // doc.find('.smlink').replaceWith(function(){
+        //     var res = $('<span/>');
+        //     res.addClass('smlink');
+        //     res.attr('data-sm-id', $(this).data('sm-id'));
+        //     return res;
+        // });
         // strange bug: without setTimeout getData return previous data, but not actual
         setTimeout(() => {
             var newValue = this.alloyEditor.get('nativeEditor').getData();
