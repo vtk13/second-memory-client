@@ -6,8 +6,8 @@ import vis from 'vis'
 
 function mapFields(obj, callback)
 {
-    var res = [];
-    for (var i in obj) {
+    let res = [];
+    for (let i in obj) {
         if (obj.hasOwnProperty(i)) {
             res.push(callback(obj[i], i));
         }
@@ -19,7 +19,7 @@ function sumRelativeOffset(elem, initial)
 {
     initial = initial || {top: 0, left: 0};
 
-    var res = {
+    let res = {
         top: initial.top + elem.offsetTop,
         left: initial.left + elem.offsetLeft
     };
@@ -28,8 +28,8 @@ function sumRelativeOffset(elem, initial)
 }
 
 function getCoords(elem) {
-    var box = elem.getBoundingClientRect();
-    var rel = sumRelativeOffset(elem.offsetParent, {top: -31, left: 0});
+    let box = elem.getBoundingClientRect();
+    let rel = sumRelativeOffset(elem.offsetParent, {top: -31, left: 0});
 
     return {
         top: box.top + pageYOffset - rel.top,
@@ -43,7 +43,7 @@ function wordwrap(str, int_width, str_break, cut) {
     // +   original by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
     // +   improved by: Nick Callen
 
-    var i, j, s, r = str.split("\n");
+    let i, j, s, r = str.split("\n");
     if(int_width > 0) for(i in r){
         for(s = r[i], r[i] = ""; s.length > int_width;
             j = cut ? int_width : (j = s.substr(0, int_width).match(/\S*$/)).input.length - j[0].length || int_width,
@@ -55,12 +55,12 @@ function wordwrap(str, int_width, str_break, cut) {
 }
 
 $('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}) {
-    var item = $(this).parents('.item').addClass('dragging').get(0);
-    var e = originalEvent;
+    let item = $(this).parents('.item').addClass('dragging').get(0);
+    let e = originalEvent;
 
-    var coords = getCoords(item);
-    var shiftX = e.pageX - coords.left;
-    var shiftY = e.pageY - coords.top;
+    let coords = getCoords(item);
+    let shiftX = e.pageX - coords.left;
+    let shiftY = e.pageY - coords.top;
 
     moveAt(e);
 
@@ -86,22 +86,19 @@ $('body').on('mousedown', '#map .item .glyphicon-move', function({originalEvent}
     };
 }).on('dragstart', '#map .item .glyphicon-move', function() { return false; });
 
-var MindmapItem = React.createClass({
-    getInitialState: function() {
-        return {
-            id: this.props.link.item.id,
-            title: this.props.link.item.title,
-            readonly: true
-        }
-    },
-    handleEdit: function() {
+class MindmapItem extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {id: props.link.item.id, title: props.link.item.title, readonly: true};
+    }
+    handleEdit(){
         this.setState({
             id: this.state.id,
             title: this.state.title,
             readonly: false
         });
-    },
-    handleSubmit: function(e) {
+    }
+    handleSubmit(e){
         e.preventDefault();
         this.setState({
             id: this.state.id,
@@ -109,29 +106,28 @@ var MindmapItem = React.createClass({
             readonly: true
         });
         this.props.onSubmit(this.state.id, this.state.title)
-    },
-    componentDidUpdate: function() {
-        if (this.state.input) {
-            var node = ReactDOM.findDOMNode(this.state.input);
+    }
+    componentDidUpdate(){
+        if (!this.state.readonly && this.state.input) {
+            let node = ReactDOM.findDOMNode(this.state.input);
             node.focus();
             node.selectionStart = node.selectionEnd = node.value.length;
         }
-    },
-    render: function() {
-        var {link} = this.props;
-        var className = 'item item' + link.item.id + ' item-type' + link.item.type + ' panel panel-default';
+    }
+    render(){
+        let {link} = this.props;
+        let className = 'item item' + link.item.id + ' item-type' + link.item.type + ' panel panel-default';
 
-        var title, editBtn;
+        let title, editBtn;
         if (this.state.readonly) {
             title = this.state.title;
-            editBtn = <span title="Edit title" onClick={this.handleEdit} className="open-item-map glyphicon glyphicon-edit" />;
-            this.state.input = null;
+            editBtn = <span title="Edit title" onClick={this.handleEdit}
+                className="open-item-map glyphicon glyphicon-edit"/>;
         } else {
             title = <form onSubmit={this.handleSubmit}>
-                    <SmTextInput ref={(input) => this.state.input = input}
-                        name="title"
-                        onChange={(value) => this.state.title = value}
-                        value={this.state.title} />
+                    <SmTextInput ref={input=>this.setState({input})}
+                        name="title" value={this.state.title}
+                        onChange={value=>this.setState({title: value})}/>
                 </form>;
             editBtn = '';
         }
@@ -143,38 +139,35 @@ var MindmapItem = React.createClass({
             >
                 <div className="panel-heading">
                     <span title="Move element" className="glyphicon glyphicon-move" />
-                    <span title="Go to this item's map" onClick={() => this.props.onGotoItem(link.item.id)}
+                    <span title="Go to this item's map"
+                          onClick={()=>this.props.onGotoItem(link.item.id)}
                           className="open-item-map glyphicon glyphicon-eye-open" />
                     {editBtn}
-                    <span title="Unlink from this map" onClick={() => this.props.onUnlink(link.item.id)}
+                    <span title="Unlink from this map"
+                          onClick={()=>this.props.onUnlink(link.item.id)}
                           className="glyphicon glyphicon-remove" />
                 </div>
                 <div className="panel-body">{title}</div>
             </div>
         );
     }
-});
+}
 
-var ItemMap = React.createClass({
-    propTypes: {
-        store: React.PropTypes.object.isRequired,
-        item: React.PropTypes.object.isRequired,
-        links: React.PropTypes.any.isRequired
-    },
-    gotoItem: function(id) {
+class ItemMap extends React.Component{
+    gotoItem(id){
         this.props.store.dispatch({type: 'LOAD_ITEM', id: id, mode: 'map'});
-    },
-    unlink: function(id) {
+    }
+    unlink(id){
         if (confirm('Really unlink?')) {
             this.props.store.dispatch({type: 'UNLINK_ITEM', id: id});
         }
-    },
-    handleSubmit: function(id, title) {
+    }
+    handleSubmit(id, title){
         this.props.store.dispatch({type: 'UPDATE_LINK_TITLE', id: id, title: title});
-    },
-    handleDoubleClick: function(e) {
-        var title = prompt('Title');
-        var coords = document.getElementById('map').getBoundingClientRect();
+    }
+    handleDoubleClick(e){
+        let title = prompt('Title');
+        let coords = document.getElementById('map').getBoundingClientRect();
         if (title !== null) {
             this.props.store.dispatch({
                 type: 'CREATE_AND_LINK_ITEM',
@@ -183,39 +176,39 @@ var ItemMap = React.createClass({
                 y: e.clientY - coords.top
             });
         }
-    },
-    render: function() {
+    }
+    render(){
         if (!this.props.item.id) {
             return false;
         }
 
-        return <div className="tab-pane active" id="map" onDoubleClick={this.handleDoubleClick}>
+        return <div className="tab-pane active" id="map" onDoubleClick={e=>this.handleDoubleClick(e)}>
             {_.values(this.props.links).filter(link=>link.type_id==0).map(link =>
                 <MindmapItem
-                    onSubmit={this.handleSubmit}
+                    onSubmit={(id, title)=>this.handleSubmit(id, title)}
                     key={link.item.id}
                     link={link}
-                    onGotoItem={this.gotoItem}
+                    onGotoItem={id=>this.gotoItem(id)}
                     onUnlink={this.unlink} />
             )}
         </div>;
     }
-});
+}
 
-var ItemGraph = React.createClass({
-    componentDidUpdate: function() {
-        var {item, links} = this.props;
+class ItemGraph extends React.Component{
+    componentDidUpdate(){
+        let {item, links} = this.props;
 
-        var nodes = new vis.DataSet([{id: item.id, label: wordwrap(item.title, 25, '\n'), shape: 'box'}]);
-        var edges = new vis.DataSet([]);
+        let nodes = new vis.DataSet([{id: item.id, label: wordwrap(item.title, 25, '\n'), shape: 'box'}]);
+        let edges = new vis.DataSet([]);
 
-        for (var i in links) {
+        for (let i in links) {
             nodes.add({id: links[i].item.id, label: wordwrap(links[i].item.title, 25, '\n'), shape: 'box'});
-            var from = Math.min(item.id, links[i].item.id), to = Math.max(item.id, links[i].item.id);
+            let from = Math.min(item.id, links[i].item.id), to = Math.max(item.id, links[i].item.id);
             edges.add({id: from + ':' + to, from, to});
         }
 
-        var network = new vis.Network(
+        let network = new vis.Network(
             document.getElementById('mynetwork'),
             {nodes, edges},
             {
@@ -235,16 +228,16 @@ var ItemGraph = React.createClass({
         window.network = network;
         network.on('click', function (params) {
             if (params.nodes.length > 0) {
-                var id = params.nodes[0];
+                let id = params.nodes[0];
 
                 window.client.default.get_items_id_links(
                     {id},
                     function(res) {
                         res.obj.map(function(link) {
                             client.default.get_items_id({id: link.right}, function (res) {
-                                var item = res.obj;
+                                let item = res.obj;
                                 nodes.update({id: item.id, label: wordwrap(item.title, 25, '\n'), shape: 'box'});
-                                var from = Math.min(id, item.id), to = Math.max(id, item.id);
+                                let from = Math.min(id, item.id), to = Math.max(id, item.id);
                                 edges.update({id: from + ':' + to, from, to});
                             });
                         });
@@ -252,10 +245,11 @@ var ItemGraph = React.createClass({
                 );
             }
         });
-    },
-    render: function() {
-        return <div id="mynetwork" style={{width: '100%', height: 500, border: 'solid 1px gray'}}></div>
     }
-});
+    render(){
+        return <div id="mynetwork"
+            style={{width: '100%', height: 500, border: 'solid 1px gray'}}/>;
+    }
+}
 
 export {ItemMap, ItemGraph}

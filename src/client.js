@@ -7,6 +7,8 @@ import ReactDOM from 'react-dom';
 import _ from 'lodash';
 
 import url from './url';
+import {SmTextInput, SmTextarea} from './components/elements';
+import {ItemMap, ItemGraph} from './components/mindmap';
 
 // swagger 3 incomplete code
 // var settings = {};
@@ -81,7 +83,7 @@ function counter(state, action) {
         case 'INIT':
             state.inProgress = true;
             state.dirty = false;
-            var [userId, itemId] = url.info();
+            let [userId, itemId] = url.info();
             if (!userId) {
                 $('body').text('Забыл userId: http://' + location.host + '/{userId}');
             } else {
@@ -376,9 +378,9 @@ window.store = createStore(counter);
 ////// REACT COMPONENTS //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var RepeatedButton = React.createClass({
-    render: function() {
-        var item = this.props.item;
+class RepeatedButton extends React.Component{
+    render(){
+        let item = this.props.item;
 
         function onClick() {
             store.dispatch({type: 'REPEATED', item: item});
@@ -390,20 +392,21 @@ var RepeatedButton = React.createClass({
             return false;
         }
     }
-});
+}
 
-var SetTypeButton = React.createClass({
-    setType: function() {
+class SetTypeButton extends React.Component{
+    setType(){
         store.dispatch({type: 'SET_TYPE', item_type: this.props.type});
-    },
-    render: function() {
-        return <button type="button" className="btn btn-primary" onClick={this.setType}>{this.props.title}</button>;
     }
-});
+    render(){
+        return <button type="button" className="btn btn-primary"
+            onClick={()=>this.setType()}>{this.props.title}</button>;
+    }
+}
 
-var DeleteButton = React.createClass({
-    render: function() {
-        var item = this.props.item;
+class DeleteButton extends React.Component{
+    render(){
+        let item = this.props.item;
 
         if (!item.id) {
             return false;
@@ -416,31 +419,33 @@ var DeleteButton = React.createClass({
             }
         }
 
-        return <button type="button" onClick={deleteItem} className="btn btn-danger pull-right">Delete</button>;
+        return <button type="button" onClick={deleteItem}
+            className="btn btn-danger pull-right">Delete</button>;
     }
-});
+}
 
-var SaveButtons = React.createClass({
-    render: function() {
-        var item = this.props.item;
+class SaveButtons extends React.Component{
+    render(){
+        let item = this.props.item;
 
         if (item.id) {
-            return <button type="button" disabled={!this.props.dirty} onClick={this.props.saveItem} className="btn btn-primary">Save</button>
+            return <button type="button" disabled={!this.props.dirty}
+                onClick={this.props.saveItem} className="btn btn-primary">Save</button>
         } else {
             return <div>
-                <button type="button" onClick={this.props.saveToLearn} className="btn btn-primary">Save to learn</button>
-                <button type="button" onClick={this.props.saveToRepeat} className="btn btn-primary">Save to repeat</button>
+                <button type="button" onClick={this.props.saveToLearn}
+                    className="btn btn-primary">Save to learn</button>
+                <button type="button" onClick={this.props.saveToRepeat}
+                    className="btn btn-primary">Save to repeat</button>
             </div>;
         }
     }
-});
+}
 
-import {SmTextInput, SmWysiwyg} from './components/elements'
-
-var ItemEditor = React.createClass({
-    render: function() {
-        var {title, href, text} = this.props.item;
-        var item = this.props.item;
+class ItemEditor extends React.Component{
+    render(){
+        let {title, href, text} = this.props.item;
+        let item = this.props.item;
 
         function saveItemWithType(type) {
             store.dispatch({
@@ -455,9 +460,9 @@ var ItemEditor = React.createClass({
         function saveToLearn() { saveItemWithType(1); }
         function saveToRepeat() { saveItemWithType(0); }
 
-        var setTypeButtons = [];
+        let setTypeButtons = [];
         if (item.id) {
-            var buttons = [
+            let buttons = [
                 {type: 0, title: 'Set On Repeat'},
                 {type: 1, title: 'Set On Learn'},
                 {type: 2, title: 'Set Inactive'},
@@ -465,7 +470,8 @@ var ItemEditor = React.createClass({
             setTypeButtons = buttons.reduce(
                 (acc, button)=> {
                     if (button.type != item.type)
-                        acc.push(<SetTypeButton key={button.type} type={button.type} title={button.title} />);
+                        acc.push(<SetTypeButton key={button.type} type={button.type}
+                            title={button.title} />);
                     return acc;
                 },
                 []
@@ -474,36 +480,36 @@ var ItemEditor = React.createClass({
 
         return <div className="tab-pane active row">
             <div className="form-group col-xs-6">
-                <SmTextInput name="title" value={title} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {title: value}})} />
+                <SmTextInput name="title" value={title}
+                    onChange={value=>store.dispatch({type: 'CHANGE_ITEM', item: {title: value}})} />
             </div>
             <div className="form-group col-xs-6">
-                <SmTextInput name="href" value={href} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {href: value}})}/>
+                <SmTextInput name="href" value={href}
+                    onChange={value=>store.dispatch({type: 'CHANGE_ITEM', item: {href: value}})}/>
             </div>
             <div className="form-group col-xs-12">
-                <SmWysiwyg name="text" value={text} onChange={(value) => store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
+                <SmTextarea name="text" value={text}
+                    onChange={value=>store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
             </div>
             <div className="form-group col-xs-12">
                 {_.values(this.props.backlinks).map(backlink=>
-                    <button key={backlink.id} onClick={()=>store.dispatch({type: 'LOAD_ITEM', id: backlink.id})}>
+                    <button key={backlink.id}
+                        onClick={()=>store.dispatch({type: 'LOAD_ITEM', id: backlink.id})}>
                         {backlink.item.title}
                     </button>
                 )}
             </div>
             <div className="form-group col-xs-12">
                 <DeleteButton item={this.props.item}/>
-                <SaveButtons item={this.props.item}
-                             dirty={this.props.dirty}
-                             saveItem={saveItem}
-                             saveToLearn={saveToLearn}
-                             saveToRepeat={saveToRepeat}/>
+                <SaveButtons item={this.props.item} dirty={this.props.dirty}
+                    saveItem={saveItem} saveToLearn={saveToLearn}
+                    saveToRepeat={saveToRepeat}/>
                 {setTypeButtons}
-                <RepeatedButton item={this.props.item} />
+                <RepeatedButton item={this.props.item}/>
             </div>
         </div>;
     }
-});
-
-import {ItemMap, ItemGraph} from './components/mindmap'
+}
 
 function ItemHyperLink({item})
 {
@@ -514,26 +520,32 @@ function ItemHyperLink({item})
     }
 }
 
-var ItemWorkspace = React.createClass({
-    componentDidMount: function() {
+class SmEditor extends React.Component{
+    render(){
+        return 'it works!';
+    }
+}
+
+class ItemWorkspace extends React.Component{
+    componentDidMount(){
         $('.item-area').on('click', 'a[data-toggle]', function() {
             window.location.hash = $(this).attr('href');
         });
-    },
-    componentDidUpdate: function() {
-        var tab = location.hash || '#edit';
+    }
+    componentDidUpdate(){
+        let tab = location.hash || '#edit';
         $('.item-area a[href="' + tab + '"]').tab('show');
         $('a[href="#graph"]').one('click', function() {
             setTimeout(() => window.network.fit(), 0);
         });
-    },
-    render: function() {
-        var {item, links, backlinks, dirty} = this.props;
+    }
+    render(){
+        let {item, links, backlinks, dirty} = this.props;
 
-        var menu = [
+        let menu = [
             {id: 'edit', caption: 'Editor'}
         ];
-        var map = '', graph;
+        let map = '', graph;
         if (item && item.id) {
             menu.push({id: 'map', caption: 'Map'});
             map = (
@@ -554,13 +566,11 @@ var ItemWorkspace = React.createClass({
             return (
                 <div className="item-area">
                     <ul className="nav nav-tabs current-item-container-tabs" role="tablist">
-                        {menu.map(function(menuItem) {
-                            return (
-                                <li key={menuItem.id} role="presentation">
-                                    <a href={'#' + menuItem.id} role="tab" data-toggle="tab">{menuItem.caption}</a>
-                                </li>
-                            );
-                        })}
+                        {menu.map(menuItem=>(
+                            <li key={menuItem.id} role="presentation">
+                                <a href={'#' + menuItem.id} role="tab" data-toggle="tab">{menuItem.caption}</a>
+                            </li>
+                        ))}
                         <ItemHyperLink item={item} />
                     </ul>
                     <div className="tab-content">
@@ -573,10 +583,13 @@ var ItemWorkspace = React.createClass({
                 </div>
             );
         } else {
-            return <div className="item-area"><p>No current item selected</p></div>;
+            return <div className="item-area">
+                <p>No current item selected</p>
+                <SmEditor/>
+            </div>;
         }
     }
-});
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ///// Bootstrap ////////////////////////////////////////////////////////////////////////////////

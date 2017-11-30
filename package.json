@@ -7,7 +7,6 @@
     "doc": "docs"
   },
   "dependencies": {
-    "alloyeditor": "^1.4.1",
     "babel-core": "^6.25.0",
     "babel-loader": "^7.1.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
@@ -21,8 +20,8 @@
     "lodash": "^4.17.4",
     "mocha": "^3.4.2",
     "mocha-loader": "^1.1.1",
-    "react": "^15.6.1",
-    "react-dom": "^15.6.1",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
     "redux": "^3.7.1",
     "swagger-client": "^2.2.21",
     "vis": "^4.20.1",
