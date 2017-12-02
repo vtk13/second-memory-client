@@ -1,19 +1,20 @@
 import _ from 'lodash'
+import $ from 'jquery'
 import React from 'react'
 
 let testText = `Подбел растягивает подбел. Желтозём нагревает разрез. Кутана методологически эволюционирует в удельный денситомер. Вскипание с HCl, несмотря на внешние воздействия, ускоряет ламинарный лёсс. С учетом всех вышеизложенных обстоятельств, можно считать допустимым, что возмущение плотности дает зоогенный монолит. Явление дает многофазный уровень грунтовых вод, и этот процесс может повторяться многократно.
 Как следует из закона сохранения массы и энергии, орошение возникает карбонат кальция. Иллювиирование, если принять во внимание воздействие фактора времени, сжимает агрегат только в отсутствие тепло- и массообмена с окружающей средой. Тензиометр, по данным почвенной съемки, снижает полевой ортштейн. Альбедо восстанавливает гистерезис ОГХ одинаково по всем направлениям. Лессиваж, как следствие уникальности почвообразования в данных условиях, мгновенно растягивает десуктивно-выпотной желтозём. Надолба вероятна.
 Сорбция, как бы это ни казалось парадоксальным, возникает иловатый шаг смешения. Картирование трансформирует бюкс. Показатель адсорбируемости натрия, в случае использования адаптивно-ландшафтных систем земледелия, разрушаем. В первом приближении ил приводит к появлению массоперенос. Альбедо, как следует из полевых и лабораторных наблюдений, поглощает бурозём. Почвенная тестация, как следует из полевых и лабораторных наблюдений, сжимает песок.`;
 
-function Cursor(str){
+function SmParser(str){
     this.str = str;
 }
-Cursor.prototype.readChar = function(pos){
+SmParser.prototype.readChar = function(pos){
     if (pos<this.str.length)
         return [this.str[pos], pos+1];
     return [false, pos];
 };
-Cursor.prototype.readParagraph = function(pos){
+SmParser.prototype.readParagraph = function(pos){
     let char, res = '';
     do {
         [char, pos] = this.readChar(pos);
@@ -23,7 +24,7 @@ Cursor.prototype.readParagraph = function(pos){
     } while (true);
     return [res.length>0 ? res : false, pos];
 };
-Cursor.prototype[Symbol.iterator] = function*(){
+SmParser.prototype[Symbol.iterator] = function*(){
     let pos = 0, str = this.str, p;
     do {
         [p, pos] = this.readParagraph(pos);
@@ -33,33 +34,69 @@ Cursor.prototype[Symbol.iterator] = function*(){
     } while (true);
 };
 
+function SmDocument(str){
+    this.parser = new SmParser(str);
+    this.nodes = [...this.parser];
+}
+SmDocument.prototype.getNodes = function(){
+    return this.nodes;
+};
+SmDocument.prototype.insertChar = function(node, pos, char){
+    let str = this.nodes[node];
+    str = [str.slice(0, pos), char, str.slice(pos)].join('');
+    this.nodes[node] = str;
+};
+
+class SmDom {
+    constructor(domNode){
+        this.node = domNode;
+    }
+    getCharPos(clientX, clientY){
+        let rect = this.node.getBoundingClientRect();
+        let range = document.caretRangeFromPoint(clientX, clientY);
+        let rangeRect = range.getBoundingClientRect();
+        return {elm: range.startContainer, offset: range.startOffset,
+            x: rangeRect.x - rect.x - 2, y: rangeRect.y - rect.y - 3};
+    }
+    getCharPosRel(x, y){
+        let rect = this.node.getBoundingClientRect();
+        return this.getCharPos(rect.x + x, rect.y + y);
+    }
+}
+
 class SmCursor extends React.Component {
     render(){
         return <div className="sm-cursor" style={{left: this.props.x||0, top: this.props.y||0}}>|</div>;
     }
 }
 
-function caretPositionFromPoint(clientX, clientY){
-    let range = document.caretRangeFromPoint(clientX, clientY);
-    console.log(range.getBoundingClientRect());
-    return [range.startContainer, range.startOffset];
-}
+// let kn = ['altKey', 'charCode', 'ctrlKey', 'key', 'keyCode', 'locale', 'location', 'metaKey', 'repeat', 'shiftKey', 'which'];
+let kn = ['key'];
 
 class SmEditor extends React.Component {
     constructor(props){
         super(props);
-        this.state = {text: new Cursor(testText), cursorX: 0, cursorY: 0};
+        this.document = new SmDocument(testText);
+        this.smDom = null;
+        this.state = {cursorX: 0, cursorY: 0};
     }
     onElmClick(e){
-        let rect = this.smText.getBoundingClientRect();
-        console.log(rect);
-        let range = document.caretRangeFromPoint(e.clientX, e.clientY);
-        let rangeRect = range.getBoundingClientRect();
-        this.setState({cursorX: rangeRect.x - rect.x - 2, cursorY: rangeRect.y - rect.y - 3});
+        let charPos = this.smDom.getCharPos(e.clientX, e.clientY);
+        this.setState({cursorX: charPos.x, cursorY: charPos.y});
+    }
+    onKeyUp(e){
+        console.log('up', _.pick(e, kn));
+    }
+    onKeyPress(e){
+        console.log('press', _.pick(e, kn));
+        let charPos = this.smDom.getCharPosRel(this.state.cursorX, this.state.cursorY);
+        this.document.insertChar($(charPos.elm.parentNode).data('sm-id'), charPos.offset, e.key);
+        this.forceUpdate();
     }
     render(){
-        return <div className="sm-text" onClick={e=>this.onElmClick(e)} ref={e=>this.smText = e}>
-            {_.map([...this.state.text], (v, k)=><p key={k}>{v}</p>)}
+        return <div tabIndex="0" ref={e=>this.smDom = new SmDom(e)} className="sm-text"
+            onClick={e=>this.onElmClick(e)} onKeyPress={e=>this.onKeyPress(e)} onKeyUp={e=>this.onKeyUp(e)}>
+            {_.map(this.document.getNodes(), (v, k)=><p key={k} data-sm-id={k}>{v}</p>)}
             <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
         </div>;
     }
