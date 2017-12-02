@@ -9,6 +9,7 @@ import _ from 'lodash';
 import url from './url';
 import {SmTextInput, SmTextarea} from './components/elements';
 import {ItemMap, ItemGraph} from './components/mindmap';
+import {SmEditor} from './components/editor';
 
 // swagger 3 incomplete code
 // var settings = {};
@@ -517,12 +518,6 @@ function ItemHyperLink({item})
         return <a target="_blank" className="pull-right" href={item.href}><img src="/img/hyperlink.png" width="32" /></a>;
     } else {
         return <noscript/>;
-    }
-}
-
-class SmEditor extends React.Component{
-    render(){
-        return 'it works!';
     }
 }
 

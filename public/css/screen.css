@@ -121,3 +121,16 @@ pre {
     max-height: 300px;
     overflow-y: scroll;
 }
+
+.sm-text {
+    border: solid 1px #2aabd2;
+    position: relative;
+}
+.sm-cursor {
+    position: absolute;
+    animation: 1.5s blink step-end infinite;
+}
+@keyframes blink {
+    from, to { color: transparent; }
+    50% { color: black; }
+}

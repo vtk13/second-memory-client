@@ -8,6 +8,7 @@
 /public/vendor.js
 /public/client.js
 /public/test.js
+/public/babel-polyfill.js
 /public/manifest.js
 /public/css/bootstrap/
 /public/css/vis/

@@ -4,6 +4,7 @@ var SplitByPathPlugin = require('webpack-split-by-path');
 
 module.exports = {
     entry: {
+        'babel-polyfill': 'babel-polyfill',
         client: "client.js",
         test: "test.js"
     },
