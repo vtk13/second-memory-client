@@ -50,22 +50,32 @@ SmDocument.prototype.insertChar = function(node, pos, char){
 class SmDom {
     constructor(domNode){
         this.node = domNode;
+        window.smnode = this;
     }
     getCharPos(clientX, clientY){
         let rect = this.node.getBoundingClientRect();
         let range = document.caretRangeFromPoint(clientX, clientY);
         let rangeRect = range.getBoundingClientRect();
         return {elm: range.startContainer, offset: range.startOffset,
-            x: rangeRect.x - rect.x - 2, y: rangeRect.y - rect.y - 3};
+            x: rangeRect.x - rect.x, y: rangeRect.y - rect.y};
     }
     getCharPosRel(x, y){
         let rect = this.node.getBoundingClientRect();
         return this.getCharPos(rect.x + x, rect.y + y);
     }
+    getPosForOffset(node, offset){
+        let range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, offset);
+        let rect = range.getBoundingClientRect();
+        return this.getCharPos(rect.x, rect.y);
+    }
 }
 
 class SmCursor extends React.Component {
     render(){
+        if (this.props.x<0 || this.props.y<0)
+            return null;
         return <div className="sm-cursor" style={{left: this.props.x||0, top: this.props.y||0}}>|</div>;
     }
 }
@@ -80,24 +90,36 @@ class SmEditor extends React.Component {
         this.smDom = null;
         this.state = {cursorX: 0, cursorY: 0};
     }
+    setCursorXY(x, y){
+        this.setState({cursorX: x, cursorY: y});
+    }
     onElmClick(e){
         let charPos = this.smDom.getCharPos(e.clientX, e.clientY);
-        this.setState({cursorX: charPos.x, cursorY: charPos.y});
+        this.setCursorXY(charPos.x, charPos.y);
     }
     onKeyUp(e){
+        e.preventDefault();
         console.log('up', _.pick(e, kn));
     }
     onKeyPress(e){
         console.log('press', _.pick(e, kn));
-        let charPos = this.smDom.getCharPosRel(this.state.cursorX, this.state.cursorY);
-        this.document.insertChar($(charPos.elm.parentNode).data('sm-id'), charPos.offset, e.key);
-        this.forceUpdate();
+        let cursorX = this.state.cursorX, cursorY = this.state.cursorY, key = e.key;
+        this.setCursorXY(-10, -10);
+        setTimeout(()=>{
+            let charPos = this.smDom.getCharPosRel(cursorX, cursorY);
+            this.document.insertChar($(charPos.elm.parentNode).data('sm-id'), charPos.offset, key);
+            this.forceUpdate();
+            setTimeout(()=>{
+                let charPos2 = this.smDom.getPosForOffset(charPos.elm, charPos.offset+1);
+                this.setCursorXY(charPos2.x, charPos2.y);
+            }, 1);
+        }, 1);
     }
     render(){
         return <div tabIndex="0" ref={e=>this.smDom = new SmDom(e)} className="sm-text"
             onClick={e=>this.onElmClick(e)} onKeyPress={e=>this.onKeyPress(e)} onKeyUp={e=>this.onKeyUp(e)}>
             {_.map(this.document.getNodes(), (v, k)=><p key={k} data-sm-id={k}>{v}</p>)}
-            <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
+            <SmCursor x={this.state.cursorX-2} y={this.state.cursorY-3}/>
         </div>;
     }
 }
