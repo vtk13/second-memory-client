@@ -89,6 +89,8 @@ class SmEditor extends React.Component {
         this.document = new SmDocument(testText);
         this.smDom = null;
         this.state = {cursorX: 0, cursorY: 0};
+        this.charsToInsert = [];
+        this.insertInProgress = false;
     }
     setCursorXY(x, y){
         this.setState({cursorX: x, cursorY: y});
@@ -101,9 +103,11 @@ class SmEditor extends React.Component {
         e.preventDefault();
         console.log('up', _.pick(e, kn));
     }
-    onKeyPress(e){
-        console.log('press', _.pick(e, kn));
-        let cursorX = this.state.cursorX, cursorY = this.state.cursorY, key = e.key;
+    insertChars(){
+        if (this.insertInProgress || this.charsToInsert.length==0)
+            return;
+        this.insertInProgress = true;
+        let cursorX = this.state.cursorX, cursorY = this.state.cursorY, key = this.charsToInsert.shift();
         this.setCursorXY(-10, -10);
         setTimeout(()=>{
             let charPos = this.smDom.getCharPosRel(cursorX, cursorY);
@@ -112,8 +116,15 @@ class SmEditor extends React.Component {
             setTimeout(()=>{
                 let charPos2 = this.smDom.getPosForOffset(charPos.elm, charPos.offset+1);
                 this.setCursorXY(charPos2.x, charPos2.y);
+                this.insertInProgress = false;
+                this.insertChars();
             }, 1);
         }, 1);
+    }
+    onKeyPress(e){
+        console.log('press', _.pick(e, kn));
+        this.charsToInsert.push(e.key);
+        this.insertChars();
     }
     render(){
         return <div tabIndex="0" ref={e=>this.smDom = new SmDom(e)} className="sm-text"
