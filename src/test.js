@@ -1,1 +1,1 @@
-require('mocha-loader!test/sample.js');
+require('mocha-loader!test/editor.js');
