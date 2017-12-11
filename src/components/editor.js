@@ -57,7 +57,7 @@ class SmCursor extends React.Component {
     render(){
         if (this.props.x<0 || this.props.y<0)
             return null;
-        return <div className="sm-cursor" style={{left: this.props.x||0, top: this.props.y||0}}>|</div>;
+        return <div className="sm-cursor" style={{left: (this.props.x||0) - 2, top: (this.props.y||0) - 3}}>|</div>;
     }
 }
 
@@ -103,9 +103,10 @@ class SmEditor extends React.Component {
             return;
         this.insertInProgress = true;
         let cursorX = this.state.cursorX, cursorY = this.state.cursorY;
-        this._setCursorXY(-10, -10);
+        this._setCursorXY(-11, -11);
         let charPos = await postpone(()=>{
             let charPos = this._getCharPosRel(cursorX, cursorY);
+            // TODO when cursor is outside of editor, charPos might be a different element without sm-id
             if (charPos.offset==0)
                 return; // TODO join nodes
             this.document.removeCharBeforeOffset($(charPos.elm.parentNode).data('sm-id'), charPos.offset);
@@ -164,7 +165,7 @@ class SmEditor extends React.Component {
         return <div tabIndex="0" ref={e=>this.ref = e} className="sm-text"
             onClick={e=>this._onElmClick(e)} onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
             {_.map(this.document.getNodes(), (v, k)=><p key={k} data-sm-id={k}>{v}</p>)}
-            <SmCursor x={this.state.cursorX-2} y={this.state.cursorY-3}/>
+            <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
         </div>;
     }
 }
