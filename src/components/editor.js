@@ -112,14 +112,16 @@ class SmEditor extends React.Component {
             this.forceUpdate();
             return charPos;
         });
-        if (!charPos)
-            return; // TODO join nodes
-        return await postpone(()=>{
-            let charPos2 = this._getPosForOffset(charPos.elm, charPos.offset-1);
-            this._setCursorXY(charPos2.x, charPos2.y);
-            this.insertInProgress = false;
-            return this._insertChars();
-        });
+        let res;
+        if (charPos)
+            res = await postpone(()=>{
+                let charPos2 = this._getPosForOffset(charPos.elm, charPos.offset-1);
+                this._setCursorXY(charPos2.x, charPos2.y);
+                return this._insertChars();
+            });
+        // else TODO join nodes
+        this.insertInProgress = false;
+        return res;
     }
     _getCharPos(clientX, clientY){
         let rect = this.ref.getBoundingClientRect();
