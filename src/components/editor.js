@@ -108,14 +108,12 @@ SmParser.prototype.readTag = function(pos){
     [ok, , pos] = this.readChar(pos, '>');
     if (!ok)
         throw this.err('tag closing', '>', pos);
-    [, , pos] = this.readSeq(pos, /\s/);
     [ok, tag.children, pos] = this.readChildren(pos);
     if (!ok)
         tag.children = [];
     [ok, , pos] = this.matchString(pos, `</${tag.type}>`);
     if (!ok)
         throw this.err('closing tag', `</${tag.type}>`, pos);
-    [, , pos] = this.readSeq(pos, /\s/);
     return [true, tag, pos];
 };
 SmParser.prototype.readDoc = function(){
@@ -143,22 +141,63 @@ SmParser.prototype.err = function(type, expected, pos, actual){
 };
 
 function SmDocument(str){
+    if (typeof str!='string')
+        throw new Error('invalid SmDocument(str) parameter type');
     this.doc = new SmParser(str).readDoc();
+    this.coord = [0, 0];
 }
+SmDocument.prototype.setCursor = function(coord){
+    this.coord = coord;
+};
 SmDocument.prototype.getNodes = function(){
     return this.doc.children;
 };
-// TODO ugly node attribute
-SmDocument.prototype.insertChar = function(node, pos, char){
-    let tn = this.doc.children[node].children[0];
-    tn.text = [tn.text.slice(0, pos), char, tn.text.slice(pos)].join('');
+SmDocument.prototype.getNodeByCoord = function(coord){
+    let node = this.doc;
+    for (let i = 0; i < coord.length; i++){
+        node = node.children[coord[i]];
+    }
+    return node;
 };
-SmDocument.prototype.removeCharBeforeOffset = function(node, pos){
-    let tn = this.doc.children[node].children[0];
-    tn.text = [tn.text.slice(0, pos-1), tn.text.slice(pos)].join('');
+SmDocument.prototype._splitCoord = function(coord){
+    let node = this.getNodeByCoord(coord.slice(0, coord.length-1));
+    return [node, coord[coord.length-1]];
+};
+SmDocument.prototype.getCharAtCoord = function(coord){
+    let [node, pos] = this._splitCoord(coord);
+    return node.text[pos];
+};
+SmDocument.prototype.insertCharAt = function(coord, ch){
+    let [node, pos] = this._splitCoord(coord);
+    node.text = [node.text.slice(0, pos), ch, node.text.slice(pos)].join('');
+};
+SmDocument.prototype.insertCharAtCursor = function(ch){
+    this.insertCharAt(this.coord, ch);
+    this.coord[this.coord.length-1]++;
+};
+SmDocument.prototype.removeCharBefore = function(coord){
+    let [node, pos] = this._splitCoord(coord);
+    if (pos>0)
+        node.text = [node.text.slice(0, pos-1), node.text.slice(pos)].join('');
+    return pos>0;
+};
+SmDocument.prototype.removeCharBeforeCursor = function(){
+    if (this.removeCharBefore(this.coord))
+        this.coord[this.coord.length-1]--;
+};
+SmDocument.prototype.exportText = function(node){
+    return node.text;
+};
+SmDocument.prototype.exportTag = function(node){
+    return '<'+node.type+'>'+this.exportList(node.children)+'</'+node.type+'>';
+};
+SmDocument.prototype.exportList = function(list){
+    return _.map(list, child=>{
+        return child.type=='text' ? this.exportText(child) : this.exportTag(child);
+    }).join('');
 };
 SmDocument.prototype.export = function(){
-    return _.map(this.doc.children, node=>node.children[0].text).join('\n');
+    return this.exportList(this.doc.children);
 };
 
 class SmCursor extends React.Component {
@@ -172,6 +211,27 @@ class SmCursor extends React.Component {
 // let kn = ['altKey', 'charCode', 'ctrlKey', 'key', 'keyCode', 'locale', 'location', 'metaKey', 'repeat', 'shiftKey', 'which'];
 let kn = ['key'];
 
+class NodeRenderer extends React.Component {
+    render(){
+        let {node, path} = this.props;
+        let Tag = node.type;
+        return <Tag data-sm-path={path}>
+            <NodeListRenderer nodes={node.children} prefix={path+'.'}/>
+        </Tag>;
+    }
+}
+
+class NodeListRenderer extends React.Component {
+    render(){
+        let {nodes, prefix} = this.props;
+        return _.map(nodes, (node, k)=>{
+            if (node.type=='text')
+                return node.text;
+            return <NodeRenderer key={k} node={node} path={prefix+k}/>
+        });
+    }
+}
+
 class SmEditor extends React.Component {
     constructor(props){
         super(props);
@@ -180,104 +240,61 @@ class SmEditor extends React.Component {
         this.charsToInsert = [];
         this.insertInProgress = false;
     }
-    addChar(char){
-        this.charsToInsert.push(char);
-        return this._insertChars();
+    addChar(ch){
+        this.document.insertCharAtCursor(ch);
+        this.rerender();
     }
     backspace(){
-        return this._removeCharBeforeCursor();
-    }
-    async _insertChars(){
-        if (this.insertInProgress || this.charsToInsert.length==0)
-            return;
-        this.insertInProgress = true;
-        let cursorX = this.state.cursorX, cursorY = this.state.cursorY, key = this.charsToInsert.shift();
-        this._setCursorXY(-10, -10);
-        let charPos = await postpone(()=>{
-            let charPos = this._getCharPosRel(cursorX, cursorY);
-            this.document.insertChar($(charPos.elm.parentNode).data('sm-id'), charPos.offset, key);
-            this.forceUpdate();
-            return charPos;
-        });
-        return await postpone(()=>{
-            let charPos2 = this._getPosForOffset(charPos.elm, charPos.offset+1);
-            this._setCursorXY(charPos2.x, charPos2.y);
-            this.insertInProgress = false;
-            return this._insertChars();
-        });
-    }
-    async _removeCharBeforeCursor(){
-        if (this.insertInProgress)
-            return;
-        this.insertInProgress = true;
-        let cursorX = this.state.cursorX, cursorY = this.state.cursorY;
-        this._setCursorXY(-11, -11);
-        let charPos = await postpone(()=>{
-            let charPos = this._getCharPosRel(cursorX, cursorY);
-            // TODO when cursor is outside of editor, charPos might be a different element without sm-id
-            if (charPos.offset==0)
-                return; // TODO join nodes
-            this.document.removeCharBeforeOffset($(charPos.elm.parentNode).data('sm-id'), charPos.offset);
-            this.forceUpdate();
-            return charPos;
-        });
-        let res;
-        if (charPos)
-            res = await postpone(()=>{
-                let charPos2 = this._getPosForOffset(charPos.elm, charPos.offset-1);
-                this._setCursorXY(charPos2.x, charPos2.y);
-                return this._insertChars();
-            });
-        // else TODO join nodes
-        this.insertInProgress = false;
-        return res;
-    }
-    _getCharPos(clientX, clientY){
-        let rect = this.ref.getBoundingClientRect();
-        let range = document.caretRangeFromPoint(clientX, clientY);
-        let rangeRect = range.getBoundingClientRect();
-        return {elm: range.startContainer, offset: range.startOffset,
-            x: rangeRect.x - rect.x, y: rangeRect.y - rect.y};
-    }
-    _getCharPosRel(x, y){
-        let rect = this.ref.getBoundingClientRect();
-        return this._getCharPos(rect.x + x, rect.y + y);
-    }
-    _getPosForOffset(node, offset){
-        let range = document.createRange();
-        range.setStart(node, offset);
-        range.setEnd(node, offset);
-        let rect = range.getBoundingClientRect();
-        return this._getCharPos(rect.x, rect.y);
-    }
-    _setCursorXY(x, y){
-        this.setState({cursorX: x, cursorY: y});
+        this.document.removeCharBeforeCursor();
+        this.rerender();
     }
     _onElmClick(e){
-        let charPos = this._getCharPos(e.clientX, e.clientY);
-        this._setCursorXY(charPos.x, charPos.y);
+        let {startContainer: elm, startOffset: offset}
+            = document.caretRangeFromPoint(e.clientX, e.clientY);
+        let coord = String($(elm.parentNode).data('sm-path')).split('.');
+        coord.push(Array.prototype.indexOf.call(elm.parentNode.childNodes, elm));
+        coord.push(offset);
+        this.document.setCursor(coord);
+        this.rerender();
     }
     _onKeyUp(e){
         e.preventDefault();
         console.log('up', _.pick(e, kn));
         switch (e.key){
         case 'Backspace':
-            return this._removeCharBeforeCursor();
+            this.backspace();
+            break;
         }
     }
     _onKeyPress(e){
         console.log('press', _.pick(e, kn));
         this.addChar(e.key);
     }
+    async rerender(){
+        // first rerended doc then call range.getBoundingClientRect
+        await postpone(()=>this.forceUpdate());
+        let node = this.ref, c = this.document.coord, offset = c[c.length-1];
+        for (let i = 0; i < c.length-1; i++){
+            node = node.childNodes[c[i]];
+        }
+        let range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, offset);
+        let rect = range.getBoundingClientRect();
+        let rectContainer = this.ref.getBoundingClientRect();
+        let cursorX = rect.x - rectContainer.x;
+        let cursorY = rect.y - rectContainer.y;
+        this.setState({cursorX, cursorY});
+    }
     render(){
-        return <div tabIndex="0" ref={e=>this.ref = e} className="sm-text"
-            onClick={e=>this._onElmClick(e)} onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
-            {_.map(this.document.getNodes(), (v, k)=>
-                <p key={k} data-sm-id={k}>{v.children[0].text}</p>
-            )}
+        return <div className="sm-text">
+            <div tabIndex="0" ref={e=>this.ref = e}
+                onClick={e=>this._onElmClick(e)} onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
+                <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
+            </div>
             <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
         </div>;
     }
 }
 
-export {SmEditor, SmParser}
+export {SmEditor, SmDocument, SmParser}

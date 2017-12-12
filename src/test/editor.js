@@ -25,17 +25,17 @@ describe('editor', ()=>{
         let rect = editorElement.getBoundingClientRect();
         click(rect.x+20, rect.y+4);
         let state = await postpone(()=>editor.state);
-        assert.deepEqual([state.cursorX, state.cursorY], [20, 3]);
+        assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
         await editor.addChar('z');
         await editor.addChar('x');
-        assert.equal(editor.document.export(), 'qwzxe asd');
+        assert.equal(editor.document.export(), '<p>qwzxe asd</p>');
     });
     it('backspace', async ()=>{
         let rect = editorElement.getBoundingClientRect();
         click(rect.x+20, rect.y+4);
         let state = await postpone(()=>editor.state);
-        assert.deepEqual([state.cursorX, state.cursorY], [20, 3]);
+        assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
         await editor.backspace();
-        assert.equal(editor.document.export(), 'qe asd');
+        assert.equal(editor.document.export(), '<p>qe asd</p>');
     });
 });
