@@ -13,7 +13,7 @@ function click(x, y){
 }
 
 describe('editor', ()=>{
-    let testText = 'qwe asd';
+    let testText = '<p>qwe asd</p>';
     let editor, editorElement = document.getElementById('editor1');
     beforeEach(()=>{
         editor = ReactDOM.render(<SmEditor text={testText}/>, editorElement);
