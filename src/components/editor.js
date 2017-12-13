@@ -103,8 +103,8 @@ SmParser.prototype.readTag = function(pos){
     if (!ok)
         return [false, 'not a tag', pos];
     pos = _pos;
-    if (!['p', 'b'].includes(tag.type))
-        throw this.err('tag name', 'p, b', pos);
+    if (!['p', 'b', 'doc'].includes(tag.type))
+        throw this.err('tag name', 'p, b, doc', pos);
     [ok, , pos] = this.readChar(pos, '>');
     if (!ok)
         throw this.err('tag closing', '>', pos);
@@ -140,10 +140,17 @@ SmParser.prototype.err = function(type, expected, pos, actual){
         +`${JSON.stringify(actual)} given at pos ${pos}`);
 };
 
-function SmDocument(str){
-    if (typeof str!='string')
-        throw new Error('invalid SmDocument(str) parameter type');
-    this.doc = new SmParser(str).readDoc();
+function SmDocument(text){
+    switch (typeof text){
+        case 'object':
+            this.doc = text;
+            break;
+        case 'string':
+            this.doc = new SmParser(text).readDoc();
+            break;
+        default:
+            throw new Error('invalid SmDocument(str) parameter type');
+    }
     this.coord = [0, 0];
 }
 SmDocument.prototype.setCursor = function(coord){
@@ -225,9 +232,15 @@ class NodeListRenderer extends React.Component {
     render(){
         let {nodes, prefix} = this.props;
         return _.map(nodes, (node, k)=>{
-            if (node.type=='text')
-                return node.text;
-            return <NodeRenderer key={k} node={node} path={prefix+k}/>
+            switch (node.type)
+            {
+                case 'text':
+                    return node.text;
+                case 'doc':
+                    return <SmEditor key={k} text={node} inline/>;
+                default:
+                    return <NodeRenderer key={k} node={node} path={prefix+k}/>;
+            }
         });
     }
 }
@@ -237,8 +250,6 @@ class SmEditor extends React.Component {
         super(props);
         this.document = new SmDocument(props.text);
         this.state = {cursorX: 0, cursorY: 0};
-        this.charsToInsert = [];
-        this.insertInProgress = false;
     }
     addChar(ch){
         this.document.insertCharAtCursor(ch);
@@ -249,6 +260,7 @@ class SmEditor extends React.Component {
         this.rerender();
     }
     _onElmClick(e){
+        e.stopPropagation();
         let {startContainer: elm, startOffset: offset}
             = document.caretRangeFromPoint(e.clientX, e.clientY);
         let coord = String($(elm.parentNode).data('sm-path')).split('.');
@@ -271,7 +283,7 @@ class SmEditor extends React.Component {
         this.addChar(e.key);
     }
     async rerender(){
-        // first rerended doc then call range.getBoundingClientRect
+        // first rerender doc then call range.getBoundingClientRect
         await postpone(()=>this.forceUpdate());
         let node = this.ref, c = this.document.coord, offset = c[c.length-1];
         for (let i = 0; i < c.length-1; i++){
