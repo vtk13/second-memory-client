@@ -93,6 +93,31 @@ SmParser.prototype.readChildren = function(pos){
     } while (anything);
     return children.length ? [true, children, pos] : [false, 'empty', pos];
 };
+SmParser.prototype.readAttributes = function(pos){
+    [, , pos] = this.readSeq(pos, /\s/);
+    let res = {}, ok, name, val;
+    while (!this.readChar(pos, '>')[0])
+    {
+        [ok, name, pos] = this.readWord(pos);
+        if (!ok)
+            return [false, 'invalid attr name', pos];
+        [ok, , pos] = this.readChar(pos, '=');
+        if (!ok)
+            return [false, '= expected', pos];
+        [ok, , pos] = this.readChar(pos, '"');
+        if (!ok)
+            return [false, '" expected', pos];
+        [, val, pos] = this.readSeq(pos, /[^"]/);
+        [ok, , pos] = this.readChar(pos, '"');
+        if (!ok)
+            return [false, '" expected', pos];
+        if (res[name])
+            return [false, `attribute '${name}' duplication`, pos];
+        res[name] = val;
+    }
+
+    return [true, res, pos];
+};
 SmParser.prototype.readTag = function(pos){
     let ok, _pos, type, tag = {};
     [, , pos] = this.readSeq(pos, /\s/);
@@ -103,8 +128,9 @@ SmParser.prototype.readTag = function(pos){
     if (!ok)
         return [false, 'not a tag', pos];
     pos = _pos;
-    if (!['p', 'b', 'doc'].includes(tag.type))
-        throw this.err('tag name', 'p, b, doc', pos);
+    if (!['div', 'b', 'doc'].includes(tag.type))
+        throw this.err('tag name', 'div, b, doc', pos);
+    [ok, tag.attrs, pos] = this.readAttributes(pos);
     [ok, , pos] = this.readChar(pos, '>');
     if (!ok)
         throw this.err('tag closing', '>', pos);
@@ -116,7 +142,7 @@ SmParser.prototype.readTag = function(pos){
         throw this.err('closing tag', `</${tag.type}>`, pos);
     return [true, tag, pos];
 };
-SmParser.prototype.readDoc = function(){
+SmParser.prototype.readDoc = function(id){
     let ok, tag, pos = 0, tags = [];
     do {
         [ok, tag, pos] = this.readTag(pos);
@@ -126,7 +152,7 @@ SmParser.prototype.readDoc = function(){
     } while (true);
     if (pos!=this.str.length)
         throw this.err('end of document', '', pos);
-    return {type: 'doc', children: tags};
+    return {type: 'doc', attrs: {id}, children: tags};
 };
 SmParser.prototype.err = function(type, expected, pos, actual){
     if (actual===undefined)
@@ -195,16 +221,43 @@ SmDocument.prototype.removeCharBeforeCursor = function(){
 SmDocument.prototype.exportText = function(node){
     return node.text;
 };
-SmDocument.prototype.exportTag = function(node){
-    return '<'+node.type+'>'+this.exportList(node.children)+'</'+node.type+'>';
+SmDocument.prototype.exportTag = function(node, docs){
+    let res;
+    if (node.type=='doc')
+    {
+        res = `<doc id="${node.attrs.id}"></doc>`;
+        docs.push(node);
+    }
+    else
+    {
+        [res, docs] = this.exportList(node.children, docs);
+        res = '<'+node.type+'>'+res+'</'+node.type+'>';
+    }
+    return [res, docs];
 };
-SmDocument.prototype.exportList = function(list){
-    return _.map(list, child=>{
-        return child.type=='text' ? this.exportText(child) : this.exportTag(child);
-    }).join('');
+SmDocument.prototype.exportList = function(list, docs){
+    let res = '', tag;
+    for (let child of list)
+    {
+        if (child.type=='text')
+            res += this.exportText(child);
+        else
+        {
+            [tag, docs] = this.exportTag(child, docs);
+            res += tag;
+        }
+    }
+    return [res, docs];
 };
 SmDocument.prototype.export = function(){
-    return this.exportList(this.doc.children);
+    let docs = [this.doc], res = [];
+    while (docs.length)
+    {
+        let doc = docs.shift(), exported;
+        [exported, docs] = this.exportList(doc.children, docs);
+        res.push([doc.attrs.id, exported]);
+    }
+    return res;
 };
 
 class SmCursor extends React.Component {
@@ -236,8 +289,6 @@ class NodeListRenderer extends React.Component {
             {
                 case 'text':
                     return node.text;
-                case 'doc':
-                    return <SmEditor key={k} text={node} inline/>;
                 default:
                     return <NodeRenderer key={k} node={node} path={prefix+k}/>;
             }
@@ -248,7 +299,7 @@ class NodeListRenderer extends React.Component {
 class SmEditor extends React.Component {
     constructor(props){
         super(props);
-        this.document = new SmDocument(props.text);
+        window.smdoc = this.document = new SmDocument(props.text);
         this.state = {cursorX: 0, cursorY: 0};
     }
     addChar(ch){
@@ -300,8 +351,8 @@ class SmEditor extends React.Component {
     }
     render(){
         return <div className="sm-text">
-            <div tabIndex="0" ref={e=>this.ref = e}
-                onClick={e=>this._onElmClick(e)} onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
+            <div tabIndex="0" ref={e=>this.ref = e} onClick={e=>this._onElmClick(e)}
+                onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
                 <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
             </div>
             <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>

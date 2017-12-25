@@ -1,4 +1,5 @@
 import {assert} from 'chai'
+import sinon from 'sinon'
 import {SmParser} from '../components/editor'
 
 describe('parser', ()=>{
@@ -42,36 +43,44 @@ describe('parser', ()=>{
         t('at the end', 7, [false, 'not a word', 7]);
     });
     describe('readTag', ()=>{
-        it('p', ()=>{
-            let [ok, tag, pos] = new SmParser('<p>qwe</p>').readTag(0);
-            assert.deepEqual(tag,
-                {type: 'p', children: [{type: 'text', text: 'qwe'}]});
+        it('div', ()=>{
+            let [ok, tag, pos] = new SmParser('<div>qwe</div>').readTag(0);
+            sinon.assert.match(tag,
+                {type: 'div', children: [{type: 'text', text: 'qwe'}]});
         });
         it('b', ()=>{
             let [ok, tag, pos] = new SmParser('<b>qwe</b>').readTag(0);
-            assert.deepEqual(tag,
+            sinon.assert.match(tag,
                 {type: 'b', children: [{type: 'text', text: 'qwe'}]});
         });
+        describe('attributes', ()=>{
+            let t = (name, str, expected)=>it(name, ()=>{
+                let [ok, tag, pos] = new SmParser(str).readTag(0);
+                assert.deepEqual(tag.attrs, expected);
+            });
+            t('no attrs', '<div></div>', {});
+            t('one attr', '<div a="b"></div>', {a: 'b'});
+        });
         it('children', ()=>{
-            let [ok, tag, pos] = new SmParser('<p>qwe<b>asd</b></p>').readTag(0);
-            assert.deepEqual(tag, {type: 'p', children: [
+            let [ok, tag, pos] = new SmParser('<div>qwe<b>asd</b></div>').readTag(0);
+            sinon.assert.match(tag, {type: 'div', children: [
                 {type: 'text', text: 'qwe'},
-                {type: 'b', children: [{type: 'text', text: 'asd'}]}
+                sinon.match({type: 'b', children: [{type: 'text', text: 'asd'}]})
             ]});
         });
     });
     describe('readDoc', ()=>{
         let t = (name, html, expected)=>it(name, ()=>{
             let doc = new SmParser(html).readDoc();
-            assert.deepEqual(doc.children, expected);
+            sinon.assert.match(doc.children, expected);
         });
-        t('condense', '<p>qwe</p><p>asd</p>', [
-            {type: 'p', children: [{type: 'text', text: 'qwe'}]},
-            {type: 'p', children: [{type: 'text', text: 'asd'}]},
+        t('condense', '<div>qwe</div><div>asd</div>', [
+            sinon.match({type: 'div', children: [{type: 'text', text: 'qwe'}]}),
+            sinon.match({type: 'div', children: [{type: 'text', text: 'asd'}]}),
         ]);
-        t('sparse', ' <p>qwe</p>\n  <p>asd</p>  ', [
-            {type: 'p', children: [{type: 'text', text: 'qwe'}]},
-            {type: 'p', children: [{type: 'text', text: 'asd'}]},
+        t('sparse', ' <div>qwe</div>\n  <div>asd</div>  ', [
+            sinon.match({type: 'div', children: [{type: 'text', text: 'qwe'}]}),
+            sinon.match({type: 'div', children: [{type: 'text', text: 'asd'}]}),
         ]);
     });
     describe('structure', ()=>{

@@ -1,23 +1,26 @@
 import {assert} from 'chai'
+import sinon from 'sinon'
 import {SmDocument} from '../components/editor'
 
 describe('document', ()=>{
     describe('export', ()=>{
         let t = (name, str, expected)=>it(name, ()=>{
             let doc = new SmDocument(str);
-            assert.equal(doc.export(), expected);
+            sinon.assert.match(doc.export(), expected);
         });
-        t('simple', '<p>qwe</p>', '<p>qwe</p>');
-        t('nested', '<p>qwe</p><p>asd<b>zxc</b>rty</p>',
-            '<p>qwe</p><p>asd<b>zxc</b>rty</p>');
-        t('sparse', ' <p>qwe </p> \n <p> asd<b>zxc</b> rty</p>  ',
-            '<p>qwe </p><p> asd<b>zxc</b> rty</p>');
+        t('simple', '<div>qwe</div>', [[undefined, '<div>qwe</div>']]);
+        t('nested', '<div>qwe</div><div>asd<b>zxc</b>rty</div>',
+            [[undefined, '<div>qwe</div><div>asd<b>zxc</b>rty</div>']]);
+        t('nested_docs', '<div>qwe<doc id="1"><div>asd</div></doc></div>',
+            [[undefined, '<div>qwe<doc id="1"></doc></div>'], ['1', '<div>asd</div>']]);
+        t('sparse', ' <div>qwe </div> \n <div> asd<b>zxc</b> rty</div>  ',
+            [[undefined, '<div>qwe </div><div> asd<b>zxc</b> rty</div>']]);
     });
     describe('cursor', ()=>{
         describe('getChar', ()=>{
             let doc;
             beforeEach(()=>{
-                doc = new SmDocument('<p>qwe</p><p>asd <b>zxc</b> rty</p>');
+                doc = new SmDocument('<div>qwe</div><div>asd <b>zxc</b> rty</div>');
             });
             let t = (name, coord, expected)=>it(name, ()=>{
                 assert.equal(doc.getCharAtCoord(coord), expected);
@@ -28,14 +31,14 @@ describe('document', ()=>{
         describe('insertCharAt', ()=>{
             let doc;
             beforeEach(()=>{
-                doc = new SmDocument('<p>qwe</p><p>asd <b>zxc</b> rty</p>');
+                doc = new SmDocument('<div>qwe</div><div>asd <b>zxc</b> rty</div>');
             });
             let t = (name, coord, ch, expected)=>it(name, ()=>{
                 doc.insertCharAt(coord, ch);
-                assert.equal(doc.export(), expected);
+                sinon.assert.match(doc.export(), expected);
             });
-            t('simple', [0, 0, 1], 'w', '<p>qwwe</p><p>asd <b>zxc</b> rty</p>');
-            t('nested', [1, 1, 0, 2], 'c', '<p>qwe</p><p>asd <b>zxcc</b> rty</p>');
+            t('simple', [0, 0, 1], 'w', [[undefined, '<div>qwwe</div><div>asd <b>zxc</b> rty</div>']]);
+            t('nested', [1, 1, 0, 2], 'c', [[undefined, '<div>qwe</div><div>asd <b>zxcc</b> rty</div>']]);
         });
     });
 });

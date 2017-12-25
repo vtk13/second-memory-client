@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import {assert} from 'chai'
+import sinon from 'sinon'
 import {SmEditor} from '../components/editor'
 import {postpone} from '../util/util'
 
@@ -13,7 +14,7 @@ function click(x, y){
 }
 
 describe('editor', ()=>{
-    let testText = '<p>qwe asd</p>';
+    let testText = '<div>qwe asd</div>';
     let editor, editorElement = document.getElementById('editor1');
     beforeEach(()=>{
         editor = ReactDOM.render(<SmEditor text={testText}/>, editorElement);
@@ -28,7 +29,8 @@ describe('editor', ()=>{
         assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
         await editor.addChar('z');
         await editor.addChar('x');
-        assert.equal(editor.document.export(), '<p>qwzxe asd</p>');
+        sinon.assert.match(editor.document.export(),
+            [[undefined, '<div>qwzxe asd</div>']]);
     });
     it('backspace', async ()=>{
         let rect = editorElement.getBoundingClientRect();
@@ -36,6 +38,7 @@ describe('editor', ()=>{
         let state = await postpone(()=>editor.state);
         assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
         await editor.backspace();
-        assert.equal(editor.document.export(), '<p>qe asd</p>');
+        sinon.assert.match(editor.document.export(),
+            [[undefined, '<div>qe asd</div>']]);
     });
 });

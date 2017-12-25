@@ -130,6 +130,10 @@ pre {
     position: absolute;
     animation: 1.5s blink step-end infinite;
 }
+doc {
+    display: inline-block;
+    background: #afd9ee;
+}
 @keyframes blink {
     from, to { color: transparent; }
     50% { color: black; }
