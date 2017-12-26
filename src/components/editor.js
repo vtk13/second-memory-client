@@ -169,10 +169,10 @@ SmParser.prototype.err = function(type, expected, pos, actual){
 function SmDocument(text){
     switch (typeof text){
         case 'object':
-            this.doc = text;
+            this.root = text;
             break;
         case 'string':
-            this.doc = new SmParser(text).readDoc();
+            this.root = new SmParser(text).readDoc();
             break;
         default:
             throw new Error('invalid SmDocument(str) parameter type');
@@ -183,13 +183,22 @@ SmDocument.prototype.setCursor = function(coord){
     this.coord = coord;
 };
 SmDocument.prototype.getNodes = function(){
-    return this.doc.children;
+    return this.root.children;
 };
-SmDocument.prototype.getNodeByCoord = function(coord){
-    let node = this.doc;
-    for (let i = 0; i < coord.length; i++){
+SmDocument.prototype.getPathByCoord = function(coord){
+    coord = coord||this.coord;
+    let res = [], node = this.root;
+    for (let i = 0; i < coord.length-1; i++)
+    {
+        res.push(node.children[coord[i]]);
         node = node.children[coord[i]];
     }
+    return res;
+};
+SmDocument.prototype.getNodeByCoord = function(coord){
+    let node = this.root;
+    for (let i = 0; i < coord.length; i++)
+        node = node.children[coord[i]];
     return node;
 };
 SmDocument.prototype._splitCoord = function(coord){
@@ -250,7 +259,7 @@ SmDocument.prototype.exportList = function(list, docs){
     return [res, docs];
 };
 SmDocument.prototype.export = function(){
-    let docs = [this.doc], res = [];
+    let docs = [this.root], res = [];
     while (docs.length)
     {
         let doc = docs.shift(), exported;
@@ -296,6 +305,14 @@ class NodeListRenderer extends React.Component {
     }
 }
 
+class SmPath extends React.Component {
+    render(){
+        let nodes = this.props.document.getPathByCoord();
+        nodes = nodes.map(node=>node.type).reduce((acc, el)=>acc.concat(' / ', el), []);
+        return <div>{nodes}</div>;
+    }
+}
+
 class SmEditor extends React.Component {
     constructor(props){
         super(props);
@@ -337,9 +354,8 @@ class SmEditor extends React.Component {
         // first rerender doc then call range.getBoundingClientRect
         await postpone(()=>this.forceUpdate());
         let node = this.ref, c = this.document.coord, offset = c[c.length-1];
-        for (let i = 0; i < c.length-1; i++){
+        for (let i = 0; i < c.length-1; i++)
             node = node.childNodes[c[i]];
-        }
         let range = document.createRange();
         range.setStart(node, offset);
         range.setEnd(node, offset);
@@ -350,12 +366,17 @@ class SmEditor extends React.Component {
         this.setState({cursorX, cursorY});
     }
     render(){
-        return <div className="sm-text">
-            <div tabIndex="0" ref={e=>this.ref = e} onClick={e=>this._onElmClick(e)}
-                onKeyPress={e=>this._onKeyPress(e)} onKeyUp={e=>this._onKeyUp(e)}>
-                <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
+        return <div className="sm-editor">
+            <SmPath document={this.document}/>
+            <div className="sm-text">
+                <div tabIndex="0" ref={e=>this.ref = e}
+                    onClick={e=>this._onElmClick(e)}
+                    onKeyPress={e=>this._onKeyPress(e)}
+                    onKeyUp={e=>this._onKeyUp(e)}>
+                    <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
+                </div>
+                <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
             </div>
-            <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
         </div>;
     }
 }

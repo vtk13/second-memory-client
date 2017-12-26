@@ -1,4 +1,5 @@
 import React from 'react'
+import $ from 'jquery'
 import ReactDOM from 'react-dom'
 import {assert} from 'chai'
 import sinon from 'sinon'
@@ -23,7 +24,7 @@ describe('editor', ()=>{
         ReactDOM.unmountComponentAtNode(editorElement);
     });
     it('type chars', async ()=>{
-        let rect = editorElement.getBoundingClientRect();
+        let rect = $('.sm-text', editorElement).get(0).getBoundingClientRect();
         click(rect.x+20, rect.y+4);
         let state = await postpone(()=>editor.state);
         assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
@@ -33,7 +34,7 @@ describe('editor', ()=>{
             [[undefined, '<div>qwzxe asd</div>']]);
     });
     it('backspace', async ()=>{
-        let rect = editorElement.getBoundingClientRect();
+        let rect = $('.sm-text', editorElement).get(0).getBoundingClientRect();
         click(rect.x+20, rect.y+4);
         let state = await postpone(()=>editor.state);
         assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
