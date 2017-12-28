@@ -191,7 +191,12 @@ function SmDocument(text){
     this.coord = [0, 0];
 }
 SmDocument.prototype.setCursor = function(coord){
-    this.coord = coord;
+    if (!_.isEqual(this.coord, coord.length))
+    {
+        this.coord = coord;
+        return true;
+    }
+    return false;
 };
 SmDocument.prototype.getNodes = function(){
     return this.root.children;
@@ -280,22 +285,15 @@ SmDocument.prototype.export = function(){
     return res;
 };
 
-class SmCursor extends React.Component {
-    render(){
-        if (this.props.x<0 || this.props.y<0)
-            return null;
-        return <div className="sm-cursor" style={{left: (this.props.x||0) - 2, top: (this.props.y||0) - 3}}>|</div>;
-    }
-}
-
 // let kn = ['altKey', 'charCode', 'ctrlKey', 'key', 'keyCode', 'locale', 'location', 'metaKey', 'repeat', 'shiftKey', 'which'];
 let kn = ['key'];
 
 class NodeRenderer extends React.Component {
     render(){
         let {node, path} = this.props;
-        let Tag = node.type;
-        return <Tag data-sm-path={path}>
+        let Tag = node.type == 'doc' ? 'div' : node.type;
+        let className = node.type == 'doc' ? 'doc' : '';
+        return <Tag className={className} data-sm-path={path}>
             <NodeListRenderer nodes={node.children} prefix={path+'.'}/>
         </Tag>;
     }
@@ -328,26 +326,28 @@ class SmEditor extends React.Component {
     constructor(props){
         super(props);
         window.smdoc = this.document = new SmDocument(props.text);
-        this.state = {cursorX: 0, cursorY: 0};
+        this.state = {};
     }
     componentWillReceiveProps(props){
         // GC?
         window.smdoc = this.document = new SmDocument(props.text);
-        this.setState({cursorX: 0, cursorY: 0});
+        return this.updateSelection();
     }
     addChar(ch){
+        this.getSelection();
         this.document.insertCharAtCursor(ch);
-        this.rerender();
+        return this.updateSelection();
     }
     backspace(){
+        this.getSelection();
         this.document.removeCharBeforeCursor();
-        this.rerender();
+        return this.updateSelection();
     }
-    _onElmClick(e){
-        e.stopPropagation();
-        let {startContainer: elm, startOffset: offset}
-            = document.caretRangeFromPoint(e.clientX, e.clientY);
+    getSelection(){
+        let {anchorNode: elm, anchorOffset: offset} = window.getSelection();
         let coord;
+        if (!elm || !this.ref.contains(elm))
+            return false;
         if (elm.nodeType == Node.TEXT_NODE)
         {
             coord = String($(elm.parentNode).data('sm-path')).split('.');
@@ -361,45 +361,53 @@ class SmEditor extends React.Component {
             coord.push(0);
         }
         this.document.setCursor(coord);
-        this.rerender();
+        return true;
     }
-    _onKeyUp(e){
-        e.preventDefault();
-        console.log('up', _.pick(e, kn));
+    _onKeyDown(e){
+        console.log('down', _.pick(e, kn));
         switch (e.key){
         case 'Backspace':
+            e.preventDefault();
             this.backspace();
             break;
         }
     }
+    _onKeyUp(e){
+        console.log('up', _.pick(e, kn));
+        if (this.getSelection())
+            this.forceUpdate();
+    }
     _onKeyPress(e){
+        e.preventDefault();
         console.log('press', _.pick(e, kn));
         this.addChar(e.key);
     }
-    async rerender(){
-        // first rerender doc then call range.getBoundingClientRect
+    _onMouseUp(e){
+        console.log('mouse up');
+        if (this.getSelection())
+            this.forceUpdate();
+    }
+    async updateSelection(){
         await postpone(()=>this.forceUpdate());
         let node = this.ref, c = this.document.coord, offset = c[c.length-1];
         for (let i = 0; i < c.length-1; i++)
             node = node.childNodes[c[i]];
         let range = document.createRange();
         range.setStart(node, offset);
-        range.setEnd(node, offset);
-        let rect = range.getBoundingClientRect();
-        let rectContainer = this.ref.getBoundingClientRect();
-        let cursorX = rect.x - rectContainer.x;
-        let cursorY = rect.y - rectContainer.y;
-        this.setState({cursorX, cursorY});
+        range.collapse(true);
+        let sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
     }
     render(){
         return <div className="sm-editor">
             <SmPath document={this.document}/>
             <div className="sm-text" tabIndex="0" ref={e=>this.ref = e}
-                    onClick={e=>this._onElmClick(e)}
+                    contentEditable={true} suppressContentEditableWarning={true}
+                    onMouseUp={e=>this._onMouseUp(e)}
                     onKeyPress={e=>this._onKeyPress(e)}
-                    onKeyUp={e=>this._onKeyUp(e)}>
+                    onKeyUp={e=>this._onKeyUp(e)} onKeyDown={e=>this._onKeyDown(e)}>
                 <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
-                <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
             </div>
         </div>;
     }

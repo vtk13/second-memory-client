@@ -132,7 +132,7 @@ pre {
     position: absolute;
     animation: 1.5s blink step-end infinite;
 }
-doc {
+.doc {
     display: inline-block;
     background: #afd9ee;
 }
