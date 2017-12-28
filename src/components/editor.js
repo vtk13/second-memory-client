@@ -3,6 +3,12 @@ import $ from 'jquery'
 import React from 'react'
 import {postpone} from '../util/util'
 
+function tag(type, children, attrs){
+    if (type=='text')
+        return {type, text: children||''};
+    return {type, attrs: attrs||{}, children: children||[]};
+}
+
 /**
  * Sm Html parser
  *
@@ -13,7 +19,7 @@ import {postpone} from '../util/util'
  *
  * Node {
  *   type: <tag name> | 'text'
- *   text: <string> for text nodex
+ *   text: <string> for text nodes
  *   children: <array> for tag nodes
  * }
  *
@@ -128,7 +134,7 @@ SmParser.prototype.readTag = function(pos){
     if (!ok)
         return [false, 'not a tag', pos];
     pos = _pos;
-    if (!['div', 'b', 'doc'].includes(tag.type))
+    if (!['div', 'p', 'b', 'doc'].includes(tag.type))
         throw this.err('tag name', 'div, b, doc', pos);
     [ok, tag.attrs, pos] = this.readAttributes(pos);
     [ok, , pos] = this.readChar(pos, '>');
@@ -140,6 +146,8 @@ SmParser.prototype.readTag = function(pos){
     [ok, , pos] = this.matchString(pos, `</${tag.type}>`);
     if (!ok)
         throw this.err('closing tag', `</${tag.type}>`, pos);
+    if (tag.type=='p')
+        tag.type = 'div';
     return [true, tag, pos];
 };
 SmParser.prototype.readDoc = function(id){
@@ -172,7 +180,10 @@ function SmDocument(text){
             this.root = text;
             break;
         case 'string':
-            this.root = new SmParser(text).readDoc();
+            if (text.length)
+                this.root = new SmParser(text).readDoc();
+            else
+                this.root = tag('doc', [tag('div', [tag('text')])]);
             break;
         default:
             throw new Error('invalid SmDocument(str) parameter type');
@@ -319,6 +330,11 @@ class SmEditor extends React.Component {
         window.smdoc = this.document = new SmDocument(props.text);
         this.state = {cursorX: 0, cursorY: 0};
     }
+    componentWillReceiveProps(props){
+        // GC?
+        window.smdoc = this.document = new SmDocument(props.text);
+        this.setState({cursorX: 0, cursorY: 0});
+    }
     addChar(ch){
         this.document.insertCharAtCursor(ch);
         this.rerender();
@@ -331,9 +347,19 @@ class SmEditor extends React.Component {
         e.stopPropagation();
         let {startContainer: elm, startOffset: offset}
             = document.caretRangeFromPoint(e.clientX, e.clientY);
-        let coord = String($(elm.parentNode).data('sm-path')).split('.');
-        coord.push(Array.prototype.indexOf.call(elm.parentNode.childNodes, elm));
-        coord.push(offset);
+        let coord;
+        if (elm.nodeType == Node.TEXT_NODE)
+        {
+            coord = String($(elm.parentNode).data('sm-path')).split('.');
+            coord.push(Array.prototype.indexOf.call(elm.parentNode.childNodes, elm));
+            coord.push(offset);
+        }
+        else
+        {
+            coord = String($(elm).data('sm-path')).split('.');
+            coord.push(0);
+            coord.push(0);
+        }
         this.document.setCursor(coord);
         this.rerender();
     }
@@ -368,13 +394,11 @@ class SmEditor extends React.Component {
     render(){
         return <div className="sm-editor">
             <SmPath document={this.document}/>
-            <div className="sm-text">
-                <div tabIndex="0" ref={e=>this.ref = e}
+            <div className="sm-text" tabIndex="0" ref={e=>this.ref = e}
                     onClick={e=>this._onElmClick(e)}
                     onKeyPress={e=>this._onKeyPress(e)}
                     onKeyUp={e=>this._onKeyUp(e)}>
-                    <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
-                </div>
+                <NodeListRenderer nodes={this.document.getNodes()} prefix={''}/>
                 <SmCursor x={this.state.cursorX} y={this.state.cursorY}/>
             </div>
         </div>;

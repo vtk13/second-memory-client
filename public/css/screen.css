@@ -125,6 +125,8 @@ pre {
 .sm-text {
     border: solid 1px #2aabd2;
     position: relative;
+    min-height: 20px; /* line-height */
+    margin: 0 0 20px 0;
 }
 .sm-cursor {
     position: absolute;

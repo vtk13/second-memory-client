@@ -568,6 +568,7 @@ class ItemWorkspace extends React.Component{
                         ))}
                         <ItemHyperLink item={item} />
                     </ul>
+                    <SmEditor text={item.text}/>
                     <div className="tab-content">
                         <div role="tabpanel" className="tab-pane" id="edit">
                             <ItemEditor item={item} dirty={dirty} backlinks={backlinks} />

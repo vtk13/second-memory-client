@@ -15,31 +15,28 @@ function click(x, y){
 }
 
 describe('editor', ()=>{
-    let testText = '<div>qwe asd</div>';
-    let editor, editorElement = document.getElementById('editor1');
-    beforeEach(()=>{
-        editor = ReactDOM.render(<SmEditor text={testText}/>, editorElement);
-    });
-    afterEach(()=>{
-        ReactDOM.unmountComponentAtNode(editorElement);
-    });
-    it('type chars', async ()=>{
-        let rect = $('.sm-text', editorElement).get(0).getBoundingClientRect();
-        click(rect.x+20, rect.y+4);
-        let state = await postpone(()=>editor.state);
-        assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
-        await editor.addChar('z');
-        await editor.addChar('x');
-        sinon.assert.match(editor.document.export(),
-            [[undefined, '<div>qwzxe asd</div>']]);
-    });
-    it('backspace', async ()=>{
-        let rect = $('.sm-text', editorElement).get(0).getBoundingClientRect();
-        click(rect.x+20, rect.y+4);
-        let state = await postpone(()=>editor.state);
-        assert.deepEqual([state.cursorX, state.cursorY], [19, 2]);
-        await editor.backspace();
-        sinon.assert.match(editor.document.export(),
-            [[undefined, '<div>qe asd</div>']]);
+    describe('events', ()=>{
+        let editor, editorElement = document.getElementById('editor1');
+        afterEach(()=>{
+            ReactDOM.unmountComponentAtNode(editorElement);
+        });
+        let t = (name, text, [x, y], cb, expected)=>it(name, async ()=>{
+            editor = ReactDOM.render(<SmEditor text={text}/>, editorElement);
+            let rect = $('.sm-text', editorElement).get(0).getBoundingClientRect();
+            click(rect.x+x, rect.y+y);
+            let state = await postpone(()=>editor.state);
+            await cb(editor, state);
+            sinon.assert.match(editor.document.export(), expected);
+        });
+        t('cursor position after click', '<div>qwe asd</div>', [22, 4],
+            (editor, state)=>assert.deepEqual([state.cursorX, state.cursorY], [20, 3]),
+            [[undefined, '<div>qwe asd</div>']]);
+        t('type chars', '<div>qwe asd</div>', [20, 4], async (editor, state)=>{
+            await editor.addChar('z');
+            await editor.addChar('x');
+        }, [[undefined, '<div>qwzxe asd</div>']]);
+        t('backspace', '<div>qwe asd</div>', [20, 4], async (editor, state)=>{
+            await editor.backspace();
+        }, [[undefined, '<div>qe asd</div>']]);
     });
 });
