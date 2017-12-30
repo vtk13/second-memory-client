@@ -180,10 +180,14 @@ function SmDocument(text){
             this.root = text;
             break;
         case 'string':
-            if (text.length)
-                this.root = new SmParser(text).readDoc();
-            else
+            if (!text.length)
                 this.root = tag('doc', [tag('div', [tag('text')])]);
+            else
+            {
+                if (text[0]!='<')
+                    text = `<div>${text}</div>`;
+                this.root = new SmParser(text).readDoc();
+            }
             break;
         default:
             throw new Error('invalid SmDocument(str) parameter type');
@@ -402,7 +406,7 @@ class SmEditor extends React.Component {
     render(){
         return <div className="sm-editor">
             <SmPath document={this.document}/>
-            <div className="sm-text" tabIndex="0" ref={e=>this.ref = e}
+            <div className="sm-text" ref={e=>this.ref = e}
                     contentEditable={true} suppressContentEditableWarning={true}
                     onMouseUp={e=>this._onMouseUp(e)}
                     onKeyPress={e=>this._onKeyPress(e)}
