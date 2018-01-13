@@ -489,7 +489,7 @@ class ItemEditor extends React.Component{
                     onChange={value=>store.dispatch({type: 'CHANGE_ITEM', item: {href: value}})}/>
             </div>
             <div className="form-group col-xs-12">
-                <SmTextarea name="text" value={text}
+                <SmEditor text={text}
                     onChange={value=>store.dispatch({type: 'CHANGE_ITEM', item: {text: value}})}/>
             </div>
             <div className="form-group col-xs-12">
@@ -566,12 +566,11 @@ class ItemWorkspace extends React.Component{
                                 <a href={'#' + menuItem.id} role="tab" data-toggle="tab">{menuItem.caption}</a>
                             </li>
                         ))}
-                        <ItemHyperLink item={item} />
+                        <ItemHyperLink item={item}/>
                     </ul>
-                    <SmEditor text={item.text}/>
                     <div className="tab-content">
                         <div role="tabpanel" className="tab-pane" id="edit">
-                            <ItemEditor item={item} dirty={dirty} backlinks={backlinks} />
+                            <ItemEditor item={item} dirty={dirty} backlinks={backlinks}/>
                         </div>
                         {map}
                         {graph}

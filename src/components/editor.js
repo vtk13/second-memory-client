@@ -134,7 +134,7 @@ SmParser.prototype.readTag = function(pos){
     if (!ok)
         return [false, 'not a tag', pos];
     pos = _pos;
-    if (!['div', 'p', 'b', 'doc'].includes(tag.type))
+    if (!['div', 'p', 'b', 'doc', 'ul', 'li'].includes(tag.type))
         throw this.err('tag name', 'div, b, doc', pos);
     [ok, tag.attrs, pos] = this.readAttributes(pos);
     [ok, , pos] = this.readChar(pos, '>');
@@ -333,9 +333,8 @@ class SmEditor extends React.Component {
         this.state = {};
     }
     componentWillReceiveProps(props){
-        // GC?
+        // optimize?
         window.smdoc = this.document = new SmDocument(props.text);
-        return this.updateSelection();
     }
     addChar(ch){
         this.getSelection();
@@ -402,6 +401,9 @@ class SmEditor extends React.Component {
         let sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
+    }
+    shouldComponentUpdate(nextProps, nextState){
+        return false;
     }
     render(){
         return <div className="sm-editor">
