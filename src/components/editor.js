@@ -402,9 +402,6 @@ class SmEditor extends React.Component {
         sel.removeAllRanges();
         sel.addRange(range);
     }
-    shouldComponentUpdate(nextProps, nextState){
-        return false;
-    }
     render(){
         return <div className="sm-editor">
             <SmPath document={this.document}/>
