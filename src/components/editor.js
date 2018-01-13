@@ -184,6 +184,7 @@ function SmDocument(text){
                 this.root = tag('doc', [tag('div', [tag('text')])]);
             else
             {
+                text = _.trim(text);
                 if (text[0]!='<')
                     text = `<div>${text}</div>`;
                 this.root = new SmParser(text).readDoc();
