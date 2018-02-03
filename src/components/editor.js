@@ -64,7 +64,8 @@ SmParser.prototype.matchString = function(pos, str){
 };
 SmParser.prototype.readWord = function(pos){
     let word;
-    [, word, pos] = this.readSeq(pos, /[a-zA-Z_-]/);
+    // TODO: first letter can't be digit
+    [, word, pos] = this.readSeq(pos, /[a-zA-Z0-9_-]/);
     return word.length ? [true, word, pos] : [false, 'not a word', pos];
 };
 SmParser.prototype.readText = function(pos){
@@ -78,13 +79,11 @@ SmParser.prototype.readText = function(pos){
     return text.length ? [true, text, pos] : [false, 'not a text', pos];
 };
 SmParser.prototype.readChildren = function(pos){
-    let ok, res, _pos, children = [], anything;
+    let ok, res, _pos, children = [];
     do {
-        anything = false;
         [ok, res, _pos] = this.readText(pos);
         if (ok)
         {
-            anything = true;
             pos = _pos;
             children.push({type: 'text', text: res});
             continue;
@@ -92,12 +91,15 @@ SmParser.prototype.readChildren = function(pos){
         [ok, res, _pos] = this.readTag(pos);
         if (ok)
         {
-            anything = true;
             pos = _pos;
             children.push(res);
+            continue;
         }
-    } while (anything);
-    return children.length ? [true, children, pos] : [false, 'empty', pos];
+        else if (res!='not a tag')
+            return [false, res, _pos];
+        break;
+    } while (true);
+    return [true, children, pos];
 };
 SmParser.prototype.readAttributes = function(pos){
     [, , pos] = this.readSeq(pos, /\s/);
@@ -119,9 +121,12 @@ SmParser.prototype.readAttributes = function(pos){
             return [false, '" expected', pos];
         if (res[name])
             return [false, `attribute '${name}' duplication`, pos];
+        [, , pos] = this.readSeq(pos, /\s/);
         res[name] = val;
+        [ok, , ] = this.readChar(pos, '/');
+        if (ok)
+            break;
     }
-
     return [true, res, pos];
 };
 SmParser.prototype.readTag = function(pos){
@@ -134,20 +139,36 @@ SmParser.prototype.readTag = function(pos){
     if (!ok)
         return [false, 'not a tag', pos];
     pos = _pos;
-    if (!['div', 'p', 'b', 'doc', 'ul', 'li'].includes(tag.type))
+    if (!['div', 'p', 'b', 'doc', 'ul', 'li', 'span', 'code', 'pre',
+        'h1', 'h2', 'h3', 'img', 'a'].includes(tag.type))
+    {
         throw this.err('tag name', 'div, b, doc', pos);
+    }
     [ok, tag.attrs, pos] = this.readAttributes(pos);
-    [ok, , pos] = this.readChar(pos, '>');
     if (!ok)
-        throw this.err('tag closing', '>', pos);
-    [ok, tag.children, pos] = this.readChildren(pos);
-    if (!ok)
+        return [false, tag.attrs, pos];
+    [ok, , _pos] = this.readChar(pos, '/');
+    if (ok)
+    {
+        [ok, , pos] = this.readChar(_pos, '>');
+        if (!ok)
+            throw this.err('tag closing', '>', pos);
         tag.children = [];
-    [ok, , pos] = this.matchString(pos, `</${tag.type}>`);
-    if (!ok)
-        throw this.err('closing tag', `</${tag.type}>`, pos);
-    if (tag.type=='p')
-        tag.type = 'div';
+    }
+    else
+    {
+        [ok, , pos] = this.readChar(pos, '>');
+        if (!ok)
+            throw this.err('tag closing', '>', pos);
+        [ok, tag.children, pos] = this.readChildren(pos);
+        if (!ok)
+            return [false, tag.children, pos];
+        [ok, , pos] = this.matchString(pos, `</${tag.type}>`);
+        if (!ok)
+            throw this.err('closing tag', `</${tag.type}>`, pos);
+        if (tag.type=='p')
+            tag.type = 'div';
+    }
     return [true, tag, pos];
 };
 SmParser.prototype.readDoc = function(id){
@@ -195,6 +216,17 @@ function SmDocument(text){
     }
     this.coord = [0, 0];
 }
+SmDocument.prototype.traverse = function(cb, node){
+    if (!node)
+    {
+        cb(this.root);
+        node = this.root;
+    }
+    _.map(node.children, child=>{
+        cb(child);
+        this.traverse(cb, child);
+    });
+};
 SmDocument.prototype.setCursor = function(coord){
     if (!_.isEqual(this.coord, coord.length))
     {
@@ -298,6 +330,8 @@ class NodeRenderer extends React.Component {
         let {node, path} = this.props;
         let Tag = node.type == 'doc' ? 'div' : node.type;
         let className = node.type == 'doc' ? 'doc' : '';
+        if (Tag=='img')
+            return <Tag src={node.attrs.src}/>
         return <Tag className={className} data-sm-path={path}>
             <NodeListRenderer nodes={node.children} prefix={path+'.'}/>
         </Tag>;

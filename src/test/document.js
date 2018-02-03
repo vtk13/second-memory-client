@@ -16,6 +16,17 @@ describe('document', ()=>{
         t('sparse', ' <div>qwe </div> \n <div> asd<b>zxc</b> rty</div>  ',
             [[undefined, '<div>qwe </div><div> asd<b>zxc</b> rty</div>']]);
     });
+    describe('traverse', ()=>{
+        let t = (name, html, cb, expected)=>it(name, ()=>{
+            let doc = new SmDocument(html);
+            let res = [];
+            doc.traverse(node=>{
+                res.push(cb(node));
+            });
+            assert.deepEqual(expected, res);
+        });
+        t('count', '<p>qwe<span>asd</span>zxc</p>', ()=>1, [1, 1, 1, 1, 1, 1]);
+    });
     describe('cursor', ()=>{
         describe('getChar', ()=>{
             let doc;

@@ -31,7 +31,7 @@
     "webpack-split-by-path": "^2.0.0"
   },
   "scripts": {
-    "dev": "node_modules/webpack/bin/webpack.js -w"
+    "dev": "node_modules/webpack/bin/webpack.js -dw"
   },
   "repository": {
     "type": "git",

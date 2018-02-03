@@ -53,6 +53,11 @@ describe('parser', ()=>{
             sinon.assert.match(tag,
                 {type: 'b', children: [{type: 'text', text: 'qwe'}]});
         });
+        it('self-closing', ()=>{
+            let [ok, tag, pos] = new SmParser('<b><img src="1" /></b>').readTag(0);
+            sinon.assert.match(tag,
+                {type: 'b', children: [{type: 'img', children: [], attrs: { src: "1" }}]});
+        });
         describe('attributes', ()=>{
             let t = (name, str, expected)=>it(name, ()=>{
                 let [ok, tag, pos] = new SmParser(str).readTag(0);
@@ -60,6 +65,7 @@ describe('parser', ()=>{
             });
             t('no attrs', '<div></div>', {});
             t('one attr', '<div a="b"></div>', {a: 'b'});
+            t('two attrs', '<div a="b" c="d"></div>', {a: 'b', c: 'd'});
         });
         it('children', ()=>{
             let [ok, tag, pos] = new SmParser('<div>qwe<b>asd</b></div>').readTag(0);
