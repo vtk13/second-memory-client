@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import $ from 'jquery'
 import React from 'react'
+import assert from 'assert'
 import {postpone} from '../util/util'
 
 function tag(type, children, attrs){
@@ -248,14 +249,14 @@ SmDocument.prototype.getPathByCoord = function(coord){
     }
     return res;
 };
-SmDocument.prototype.getNodeByCoord = function(coord){
+SmDocument.prototype.getNodeByCoord = function(coord, trim=0){
     let node = this.root;
-    for (let i = 0; i < coord.length; i++)
+    for (let i = 0; i < coord.length - trim; i++)
         node = node.children[coord[i]];
     return node;
 };
 SmDocument.prototype._splitCoord = function(coord){
-    let node = this.getNodeByCoord(coord.slice(0, coord.length-1));
+    let node = this.getNodeByCoord(coord, 1);
     return [node, coord[coord.length-1]];
 };
 SmDocument.prototype.getCharAtCoord = function(coord){
@@ -269,6 +270,35 @@ SmDocument.prototype.insertCharAt = function(coord, ch){
 SmDocument.prototype.insertCharAtCursor = function(ch){
     this.insertCharAt(this.coord, ch);
     this.coord[this.coord.length-1]++;
+};
+SmDocument.prototype._splitChildren = function(coord, leftSubtree){
+    let parent = this.getNodeByCoord(coord, 1);
+    let node = this.getNodeByCoord(coord);
+    let i = parent.children.indexOf(node);
+    if (['div', 'p', 'li', 'h1', 'h2', 'h3'].includes(node.type))
+    {
+        parent.children.splice(i+1, 0, leftSubtree);
+        return [...coord.slice(0, -1), i+1];
+    }
+    else
+    {
+        let children = [leftSubtree, ...parent.children.splice(i+1)];
+        leftSubtree = _.assign({}, parent, {children});
+        let newCoord = this._splitChildren(coord.slice(0, -1), leftSubtree);
+        return [...newCoord, 0];
+    }
+};
+SmDocument.prototype.splitAt = function(coord){
+    let [node, pos] = this._splitCoord(coord);
+    let parent = this.getNodeByCoord(coord, 2);
+    assert(node.type=='text');
+    let leftSubtree = {type: 'text', text: node.text.substr(pos)};
+    node.text = node.text.substr(0, pos);
+    let newCoord = this._splitChildren(coord.slice(0, -1), leftSubtree);
+    return [...newCoord, 0];
+};
+SmDocument.prototype.splitAtCursor = function(){
+    this.coord = this.splitAt(this.coord);
 };
 SmDocument.prototype.removeCharBefore = function(coord){
     let [node, pos] = this._splitCoord(coord);
@@ -376,6 +406,11 @@ class SmEditor extends React.Component {
         this.document.insertCharAtCursor(ch);
         return this.updateSelection();
     }
+    enter(){
+        this.getSelection();
+        this.document.splitAtCursor();
+        return this.updateSelection();
+    }
     backspace(){
         this.getSelection();
         this.document.removeCharBeforeCursor();
@@ -404,6 +439,10 @@ class SmEditor extends React.Component {
     _onKeyDown(e){
         console.log('down', _.pick(e, kn));
         switch (e.key){
+        case 'Enter':
+            e.preventDefault();
+            this.enter();
+            break;
         case 'Backspace':
             e.preventDefault();
             this.backspace();
