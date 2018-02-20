@@ -51,6 +51,18 @@ describe('document', ()=>{
             t('simple', [0, 0, 1], 'w', [[undefined, '<div>qwwe</div><div>asd <b>zxc</b> rty</div>']]);
             t('nested', [1, 1, 0, 2], 'c', [[undefined, '<div>qwe</div><div>asd <b>zxcc</b> rty</div>']]);
         });
+        describe('removeCharBefore', ()=>{
+            let doc;
+            beforeEach(()=>{
+                doc = new SmDocument('<div>qwe</div><div>asd</div>');
+            });
+            let t = (name, coord, newCoord, expected)=>it(name, ()=>{
+                assert.deepEqual(doc.removeCharBefore(coord), newCoord);
+                sinon.assert.match(doc.export(), expected);
+            });
+            t('inline', [1, 0, 2], [1, 0, 1], [[undefined, '<div>qwe</div><div>ad</div>']]);
+            t('edge 1 level', [1, 0, 0], [0, 0, 3], [[undefined, '<div>qweasd</div>']]);
+        });
         describe('split', ()=>{
             let doc;
             beforeEach(()=>{

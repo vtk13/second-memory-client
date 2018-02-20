@@ -300,15 +300,37 @@ SmDocument.prototype.splitAt = function(coord){
 SmDocument.prototype.splitAtCursor = function(){
     this.coord = this.splitAt(this.coord);
 };
+SmDocument.prototype._joinChildren = function(node1, node2){
+    return node1.children.concat(node2.children).reduce((acc, node)=>{
+        if (acc.length && acc[acc.length-1].type=='text' && node.type=='text')
+            acc[acc.length-1].text += node.text;
+        else
+            acc.push(node);
+        return acc;
+    }, []);
+};
 SmDocument.prototype.removeCharBefore = function(coord){
     let [node, pos] = this._splitCoord(coord);
     if (pos>0)
+    {
         node.text = [node.text.slice(0, pos-1), node.text.slice(pos)].join('');
-    return pos>0;
+        return coord.slice(0, -1).concat(pos-1);
+    }
+    let coord0 = coord.slice(0, -2);
+    coord0[coord0.length-1]--;
+    let parent0 = this.getNodeByCoord(coord0);
+    let parent1 = this.getNodeByCoord(coord, 2);
+    let newCoord = [...coord0, parent0.children.length-1,
+        parent0.children[parent0.children.length-1].text.length];
+    parent0.children = this._joinChildren(parent0, parent1);
+    let parentParent = this.getNodeByCoord(coord, 3);
+    console.log(parentParent);
+    parentParent.children.splice(coord[coord.length-3], 1);
+    console.log(parentParent);
+    return newCoord;
 };
 SmDocument.prototype.removeCharBeforeCursor = function(){
-    if (this.removeCharBefore(this.coord))
-        this.coord[this.coord.length-1]--;
+    this.coord = this.removeCharBefore(this.coord);
 };
 SmDocument.prototype.exportText = function(node){
     return node.text;
