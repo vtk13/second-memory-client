@@ -4,7 +4,7 @@ import React from 'react'
 import assert from 'assert'
 import {postpone} from '../util/util'
 import {parseHtmlTree} from './editor/parser'
-import {createNode} from 'components/editor/tree'
+import {createNode, getNode, mergeAt} from 'components/editor/tree'
 
 /**
  * Virtual DOM
@@ -64,14 +64,8 @@ SmDocument.prototype.getPathByCoord = function(coord){
     }
     return res;
 };
-SmDocument.prototype.getNodeByCoord = function(coord, trim=0){
-    let node = this.root;
-    for (let i = 0; i < coord.length - trim; i++)
-        node = node.children[coord[i]];
-    return node;
-};
 SmDocument.prototype._splitCoord = function(coord){
-    let node = this.getNodeByCoord(coord, 1);
+    let node = getNode(this.root, coord, 1);
     return [node, coord[coord.length-1]];
 };
 SmDocument.prototype.getCharAtCoord = function(coord){
@@ -87,8 +81,8 @@ SmDocument.prototype.insertCharAtCursor = function(ch){
     this.coord[this.coord.length-1]++;
 };
 SmDocument.prototype._splitChildren = function(coord, leftSubtree){
-    let parent = this.getNodeByCoord(coord, 1);
-    let node = this.getNodeByCoord(coord);
+    let parent = getNode(this.root, coord, 1);
+    let node = getNode(this.root, coord);
     let i = parent.children.indexOf(node);
     if (['div', 'p', 'li', 'h1', 'h2', 'h3'].includes(node.type))
     {
@@ -105,7 +99,7 @@ SmDocument.prototype._splitChildren = function(coord, leftSubtree){
 };
 SmDocument.prototype.splitAt = function(coord){
     let [node, pos] = this._splitCoord(coord);
-    let parent = this.getNodeByCoord(coord, 2);
+    let parent = getNode(this.root, coord, 2);
     assert(node.type=='text');
     let leftSubtree = {type: 'text', text: node.text.substr(pos)};
     node.text = node.text.substr(0, pos);
@@ -114,15 +108,6 @@ SmDocument.prototype.splitAt = function(coord){
 };
 SmDocument.prototype.splitAtCursor = function(){
     this.coord = this.splitAt(this.coord);
-};
-SmDocument.prototype._joinChildren = function(node1, node2){
-    return node1.children.concat(node2.children).reduce((acc, node)=>{
-        if (acc.length && acc[acc.length-1].type=='text' && node.type=='text')
-            acc[acc.length-1].text += node.text;
-        else
-            acc.push(node);
-        return acc;
-    }, []);
 };
 SmDocument.prototype.removeCharBefore = function(coord){
     let [node, pos] = this._splitCoord(coord);
@@ -133,62 +118,10 @@ SmDocument.prototype.removeCharBefore = function(coord){
         return coord.slice(0, -1).concat(pos-1);
     }
     // beginning of block
-    let coord0 = coord.slice(0, -2);
-    coord0[coord0.length-1]--;
-    let parent0 = this.getNodeByCoord(coord0);
-    let parent1 = this.getNodeByCoord(coord, 2);
-    let newCoord = [...coord0, parent0.children.length-1,
-        parent0.children[parent0.children.length-1].text.length];
-    parent0.children = this._joinChildren(parent0, parent1);
-    let parentParent = this.getNodeByCoord(coord, 3);
-    console.log(parentParent);
-    parentParent.children.splice(coord[coord.length-3], 1);
-    console.log(parentParent);
-    return newCoord;
+    return mergeAt(this.root, coord);
 };
 SmDocument.prototype.removeCharBeforeCursor = function(){
     this.coord = this.removeCharBefore(this.coord);
-};
-SmDocument.prototype.exportText = function(node){
-    return node.text;
-};
-SmDocument.prototype.exportTag = function(node, docs){
-    let res;
-    if (node.type=='doc')
-    {
-        res = `<doc id="${node.attrs.id}"></doc>`;
-        docs.push(node);
-    }
-    else
-    {
-        [res, docs] = this.exportList(node.children, docs);
-        res = '<'+node.type+'>'+res+'</'+node.type+'>';
-    }
-    return [res, docs];
-};
-SmDocument.prototype.exportList = function(list, docs){
-    let res = '', tag;
-    for (let child of list)
-    {
-        if (child.type=='text')
-            res += this.exportText(child);
-        else
-        {
-            [tag, docs] = this.exportTag(child, docs);
-            res += tag;
-        }
-    }
-    return [res, docs];
-};
-SmDocument.prototype.export = function(){
-    let docs = [this.root], res = [];
-    while (docs.length)
-    {
-        let doc = docs.shift(), exported;
-        [exported, docs] = this.exportList(doc.children, docs);
-        res.push([doc.attrs.id, exported]);
-    }
-    return res;
 };
 
 // let kn = ['altKey', 'charCode', 'ctrlKey', 'key', 'keyCode', 'locale', 'location', 'metaKey', 'repeat', 'shiftKey', 'which'];
