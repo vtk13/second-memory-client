@@ -54,14 +54,15 @@ describe('document', ()=>{
         describe('removeCharBefore', ()=>{
             let doc;
             beforeEach(()=>{
-                doc = new SmDocument('<div>qwe</div><div>asd</div>');
+                doc = new SmDocument('<div>qwe</div><div>asd<b>fgh</b>zxc</div>');
             });
             let t = (name, coord, newCoord, expected)=>it(name, ()=>{
                 assert.deepEqual(doc.removeCharBefore(coord), newCoord);
                 sinon.assert.match(doc.export(), expected);
             });
-            t('inline', [1, 0, 2], [1, 0, 1], [[undefined, '<div>qwe</div><div>ad</div>']]);
-            t('edge 1 level', [1, 0, 0], [0, 0, 3], [[undefined, '<div>qweasd</div>']]);
+            t('in text', [1, 0, 2], [1, 0, 1], [[undefined, '<div>qwe</div><div>ad<b>fgh</b>zxc</div>']]);
+            t('beginning of block', [1, 0, 0], [0, 0, 3], [[undefined, '<div>qweasd<b>fgh</b>zxc</div>']]);
+            it.skip('edge 2 level');
         });
         describe('split', ()=>{
             let doc;

@@ -3,199 +3,14 @@ import $ from 'jquery'
 import React from 'react'
 import assert from 'assert'
 import {postpone} from '../util/util'
-
-function tag(type, children, attrs){
-    if (type=='text')
-        return {type, text: children||''};
-    return {type, attrs: attrs||{}, children: children||[]};
-}
+import {parseHtmlTree} from './editor/parser'
+import {createNode} from 'components/editor/tree'
 
 /**
- * Sm Html parser
+ * Virtual DOM
  *
- * Usually functions return [ok, res, pos]
- *   - ok: true/false
- *   - res: response payload or error message
- *   - pos: new cursor position after parsing chunk
- *
- * Node {
- *   type: <tag name> | 'text'
- *   text: <string> for text nodes
- *   children: <array> for tag nodes
- * }
- *
- * @param str
- * @constructor
+ * coord: [root's child n, [level x child y]+, text offset]
  */
-function SmParser(str){
-    this.str = str;
-}
-SmParser.prototype.readChar = function(pos, match){
-    if (pos>=this.str.length)
-        return [false, 'at the end', pos];
-    let ch = this.str[pos];
-    if (match===undefined)
-        return [true, ch, pos+1];
-    if (match.test)
-        return match.test(ch) ? [true, ch, pos+1] : [false, 'unmatched re', pos];
-    return ch===match ? [true, ch, pos+1] : [false, 'unmatched ch', pos];
-};
-SmParser.prototype.readSeq = function(pos, match){
-    let ok, ch, res = '';
-    while (true){
-        [ok, ch, pos] = this.readChar(pos, match);
-        if (!ok)
-            break;
-        res += ch;
-    }
-    return [true, res, pos];
-};
-SmParser.prototype.matchString = function(pos, str){
-    let ok, res, _pos = pos, chunk = '';
-    do {
-        [ok, res, _pos] = this.readChar(_pos);
-        if (!ok)
-            return [false, res, pos];
-        chunk += res;
-        if (str===chunk)
-            return [true, chunk, _pos];
-        if (chunk.length>=str.length)
-            return [false, 'unmatched', pos];
-    } while (true);
-};
-SmParser.prototype.readWord = function(pos){
-    let word;
-    // TODO: first letter can't be digit
-    [, word, pos] = this.readSeq(pos, /[a-zA-Z0-9_-]/);
-    return word.length ? [true, word, pos] : [false, 'not a word', pos];
-};
-SmParser.prototype.readText = function(pos){
-    let ok, ch, text = '', re = /[^<]/;
-    do {
-        [ok, ch, pos] = this.readChar(pos, re);
-        if (!ok)
-            break;
-        text += ch;
-    } while (true);
-    return text.length ? [true, text, pos] : [false, 'not a text', pos];
-};
-SmParser.prototype.readChildren = function(pos){
-    let ok, res, _pos, children = [];
-    do {
-        [ok, res, _pos] = this.readText(pos);
-        if (ok)
-        {
-            pos = _pos;
-            children.push({type: 'text', text: res});
-            continue;
-        }
-        [ok, res, _pos] = this.readTag(pos);
-        if (ok)
-        {
-            pos = _pos;
-            children.push(res);
-            continue;
-        }
-        else if (res!='not a tag')
-            return [false, res, _pos];
-        break;
-    } while (true);
-    return [true, children, pos];
-};
-SmParser.prototype.readAttributes = function(pos){
-    [, , pos] = this.readSeq(pos, /\s/);
-    let res = {}, ok, name, val;
-    while (!this.readChar(pos, '>')[0])
-    {
-        [ok, name, pos] = this.readWord(pos);
-        if (!ok)
-            return [false, 'invalid attr name', pos];
-        [ok, , pos] = this.readChar(pos, '=');
-        if (!ok)
-            return [false, '= expected', pos];
-        [ok, , pos] = this.readChar(pos, '"');
-        if (!ok)
-            return [false, '" expected', pos];
-        [, val, pos] = this.readSeq(pos, /[^"]/);
-        [ok, , pos] = this.readChar(pos, '"');
-        if (!ok)
-            return [false, '" expected', pos];
-        if (res[name])
-            return [false, `attribute '${name}' duplication`, pos];
-        [, , pos] = this.readSeq(pos, /\s/);
-        res[name] = val;
-        [ok, , ] = this.readChar(pos, '/');
-        if (ok)
-            break;
-    }
-    return [true, res, pos];
-};
-SmParser.prototype.readTag = function(pos){
-    let ok, _pos, type, tag = {};
-    [, , pos] = this.readSeq(pos, /\s/);
-    [ok, , _pos] = this.readChar(pos, '<');
-    if (!ok)
-        return [false, 'not a tag', pos];
-    [ok, tag.type, _pos] = this.readWord(_pos);
-    if (!ok)
-        return [false, 'not a tag', pos];
-    pos = _pos;
-    if (!['div', 'p', 'b', 'doc', 'ul', 'li', 'span', 'code', 'pre',
-        'h1', 'h2', 'h3', 'img', 'a'].includes(tag.type))
-    {
-        throw this.err('tag name', 'div, b, doc', pos);
-    }
-    [ok, tag.attrs, pos] = this.readAttributes(pos);
-    if (!ok)
-        return [false, tag.attrs, pos];
-    [ok, , _pos] = this.readChar(pos, '/');
-    if (ok)
-    {
-        [ok, , pos] = this.readChar(_pos, '>');
-        if (!ok)
-            throw this.err('tag closing', '>', pos);
-        tag.children = [];
-    }
-    else
-    {
-        [ok, , pos] = this.readChar(pos, '>');
-        if (!ok)
-            throw this.err('tag closing', '>', pos);
-        [ok, tag.children, pos] = this.readChildren(pos);
-        if (!ok)
-            return [false, tag.children, pos];
-        [ok, , pos] = this.matchString(pos, `</${tag.type}>`);
-        if (!ok)
-            throw this.err('closing tag', `</${tag.type}>`, pos);
-        if (tag.type=='p')
-            tag.type = 'div';
-    }
-    return [true, tag, pos];
-};
-SmParser.prototype.readDoc = function(id){
-    let ok, tag, pos = 0, tags = [];
-    do {
-        [ok, tag, pos] = this.readTag(pos);
-        if (!ok)
-            break;
-        tags.push(tag);
-    } while (true);
-    if (pos!=this.str.length)
-        throw this.err('end of document', '', pos);
-    return {type: 'doc', attrs: {id}, children: tags};
-};
-SmParser.prototype.err = function(type, expected, pos, actual){
-    if (actual===undefined)
-    {
-        let {min, max} = Math, l = this.str.length;
-        actual = [this.str.slice(max(pos-5, 0), max(pos, 0)),
-            '[', this.str[pos], ']',
-            this.str.slice(min(pos+1, l), min(pos+6, l))].join('');
-    }
-    return new Error(`Expected ${type} ${JSON.stringify(expected)}, `
-        +`${JSON.stringify(actual)} given at pos ${pos}`);
-};
-
 function SmDocument(text){
     switch (typeof text){
         case 'object':
@@ -203,19 +18,19 @@ function SmDocument(text){
             break;
         case 'string':
             if (!text.length)
-                this.root = tag('doc', [tag('div', [tag('text')])]);
+                this.root = createNode('doc', [createNode('div', [createNode('text')])]);
             else
             {
                 text = _.trim(text);
                 if (text[0]!='<')
                     text = `<div>${text}</div>`;
-                this.root = new SmParser(text).readDoc();
+                this.root = parseHtmlTree(text);
             }
             break;
         default:
             throw new Error('invalid SmDocument(str) parameter type');
     }
-    this.coord = [0, 0];
+    this.coord = [0, 0, 0];
 }
 SmDocument.prototype.traverse = function(cb, node){
     if (!node)
@@ -311,11 +126,13 @@ SmDocument.prototype._joinChildren = function(node1, node2){
 };
 SmDocument.prototype.removeCharBefore = function(coord){
     let [node, pos] = this._splitCoord(coord);
+    // in text
     if (pos>0)
     {
         node.text = [node.text.slice(0, pos-1), node.text.slice(pos)].join('');
         return coord.slice(0, -1).concat(pos-1);
     }
+    // beginning of block
     let coord0 = coord.slice(0, -2);
     coord0[coord0.length-1]--;
     let parent0 = this.getNodeByCoord(coord0);
@@ -413,6 +230,12 @@ class SmPath extends React.Component {
     }
 }
 
+class SmActions extends React.Component {
+    render(){
+        return <div><button>B</button></div>;
+    }
+}
+
 class SmEditor extends React.Component {
     constructor(props){
         super(props);
@@ -424,21 +247,21 @@ class SmEditor extends React.Component {
         window.smdoc = this.document = new SmDocument(props.text);
     }
     addChar(ch){
-        this.getSelection();
+        this.dom2docSelectionSync();
         this.document.insertCharAtCursor(ch);
         return this.updateSelection();
     }
     enter(){
-        this.getSelection();
+        this.dom2docSelectionSync();
         this.document.splitAtCursor();
         return this.updateSelection();
     }
     backspace(){
-        this.getSelection();
+        this.dom2docSelectionSync();
         this.document.removeCharBeforeCursor();
         return this.updateSelection();
     }
-    getSelection(){
+    dom2docSelectionSync(){
         let {anchorNode: elm, anchorOffset: offset} = window.getSelection();
         let coord;
         if (!elm || !this.ref.contains(elm))
@@ -473,7 +296,7 @@ class SmEditor extends React.Component {
     }
     _onKeyUp(e){
         console.log('up', _.pick(e, kn));
-        if (this.getSelection())
+        if (this.dom2docSelectionSync())
             this.forceUpdate();
     }
     _onKeyPress(e){
@@ -483,7 +306,7 @@ class SmEditor extends React.Component {
     }
     _onMouseUp(e){
         console.log('mouse up');
-        if (this.getSelection())
+        if (this.dom2docSelectionSync())
             this.forceUpdate();
     }
     async updateSelection(){
@@ -501,6 +324,7 @@ class SmEditor extends React.Component {
     render(){
         return <div className="sm-editor">
             <SmPath document={this.document}/>
+            <SmActions document={this.document}/>
             <div className="sm-text" ref={e=>this.ref = e}
                     contentEditable={true} suppressContentEditableWarning={true}
                     onMouseUp={e=>this._onMouseUp(e)}
@@ -512,4 +336,4 @@ class SmEditor extends React.Component {
     }
 }
 
-export {SmEditor, SmDocument, SmParser}
+export {SmEditor, SmDocument}
